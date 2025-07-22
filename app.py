@@ -106,5 +106,9 @@ def upload_epub():
 def get_audio(filename):
     return send_from_directory(AUDIO_FOLDER, filename)
 
+import os
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)
+
