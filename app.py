@@ -69,15 +69,23 @@ def index():
 
 @app.route('/upload', methods=['POST'])
 def upload_epub():
-    # Updated to expect 'epub' instead of 'file' to match your new frontend
+    print("=== /upload called ===")
+    print("Form keys:", list(request.form.keys()))
+    print("File keys:", list(request.files.keys()))
+
     if 'epub' not in request.files:
+        print("ERROR: No file part named 'epub' in request.files")
         return jsonify({'error': 'No file part named "epub" in the request'}), 400
 
     file = request.files['epub']
+    print(f"Received file: {file.filename}")
+
     if file.filename == '':
+        print("ERROR: No selected file")
         return jsonify({'error': 'No selected file'}), 400
 
     if not file.filename.lower().endswith('.epub'):
+        print("ERROR: File is not an EPUB")
         return jsonify({'error': 'File must be an EPUB (.epub)'}), 400
 
     voice = request.form.get('voice', '').strip()
@@ -85,22 +93,31 @@ def upload_epub():
         voice = 'en-US-JennyNeural'
 
     filepath = os.path.join(UPLOAD_FOLDER, file.filename)
-    file.save(filepath)
-
     try:
+        file.save(filepath)
+        print(f"Saved file to {filepath}")
+
         title, text = extract_epub_text(filepath)
+        print(f"Extracted text from EPUB: title='{title[:30]}'")
+
         chunks = chunk_text(text)
+        print(f"Number of chunks: {len(chunks)}")
+
         audio_files = run_async(synthesize_chunks_async, chunks, voice=voice)
+        print(f"Generated audio files: {audio_files}")
+
     except Exception as e:
-        print("Error during TTS synthesis:")
+        print("Exception during processing:")
+        import traceback
         traceback.print_exc()
-        return jsonify({'error': 'TTS synthesis failed', 'details': str(e)}), 500
+        return jsonify({'error': 'Processing failed', 'details': str(e)}), 500
 
     return jsonify({
-        # Your frontend only uses text_chunks and audio_files, title is optional
+        'title': title,
         'text_chunks': chunks,
         'audio_files': audio_files
     })
+
 
 @app.route('/audio/<filename>')
 def get_audio(filename):
