@@ -39,7 +39,6 @@ def extract_epub_text(epub_path):
     return title_str, clean_text(text)
 
 def chunk_text(text):
-    # Split text strictly by sentences ending with .?! followed by space(s)
     sentences = re.split(r'(?<=[.?!])\s+', text)
     return [s.strip() for s in sentences if s.strip()]
 
@@ -108,7 +107,6 @@ def upload_epub():
 
     except Exception as e:
         print("Exception during processing:")
-        import traceback
         traceback.print_exc()
         return jsonify({'error': 'Processing failed', 'details': str(e)}), 500
 
@@ -118,14 +116,10 @@ def upload_epub():
         'audio_files': audio_files
     })
 
-
 @app.route('/audio/<filename>')
 def get_audio(filename):
     return send_from_directory(AUDIO_FOLDER, filename)
 
-import os
-
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
-
