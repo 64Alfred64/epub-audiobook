@@ -72,10 +72,13 @@
   <h1>EPUB Audio Reader</h1>
 
   <div class="controls">
-    <form id="uploadForm" enctype="multipart/form-data">
+    <form id="uploadForm">
       <input type="file" id="epubFile" name="epub" accept=".epub" required />
       <select id="voiceSelect" name="voice">
         <option value="">Select Voice (default: Jenny)</option>
+        {% for voice in voices %}
+          <option value="{{ voice }}">{{ voice }}</option>
+        {% endfor %}
       </select>
       <button type="submit">Convert EPUB to Audio</button>
     </form>
@@ -84,21 +87,6 @@
   <div id="textDisplay"></div>
 
   <script>
-    const voices = [
-      "en-AU-NatashaNeural", "en-AU-WilliamNeural", "en-CA-ClaraNeural", "en-CA-LiamNeural",
-      "en-GB-LibbyNeural", "en-GB-RyanNeural", "en-GB-SoniaNeural", "en-IN-NeerjaNeural",
-      "en-IN-PriyaNeural", "en-US-AriaNeural", "en-US-GuyNeural", "en-US-JennyNeural",
-      "en-US-MichelleNeural", "en-US-TonyNeural"
-    ];
-
-    const voiceSelect = document.getElementById('voiceSelect');
-    voices.forEach(v => {
-      const option = document.createElement('option');
-      option.value = v;
-      option.textContent = v;
-      voiceSelect.appendChild(option);
-    });
-
     const form = document.getElementById('uploadForm');
     const textDisplay = document.getElementById('textDisplay');
 
@@ -108,10 +96,6 @@
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const formData = new FormData(form);
-      const selectedVoice = voiceSelect.value;
-      if (selectedVoice) {
-        formData.append('voice', selectedVoice);
-      }
 
       textDisplay.textContent = 'Processing EPUB...';
 
@@ -146,20 +130,16 @@
 
     textDisplay.addEventListener('click', (e) => {
       if (e.target.tagName.toLowerCase() === 'span' && e.target.dataset.audio) {
-        // Remove highlight from all spans
         const spans = Array.from(textDisplay.querySelectorAll('span'));
         spans.forEach(s => s.classList.remove('highlight'));
 
-        // Highlight clicked span
         e.target.classList.add('highlight');
 
-        // Stop current audio if playing
         if (currentAudio) {
           currentAudio.pause();
           currentAudio.currentTime = 0;
         }
 
-        // Play the new audio
         currentAudio = new Audio(e.target.dataset.audio);
         currentAudio.play();
       }
