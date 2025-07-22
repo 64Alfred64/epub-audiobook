@@ -1,7 +1,6 @@
 import os
 import re
 import asyncio
-import traceback
 from flask import Flask, request, jsonify, send_from_directory, render_template
 from flask_cors import CORS
 from edge_tts import Communicate
@@ -49,13 +48,11 @@ async def synthesize_chunk(text, filename, voice="en-US-JennyNeural"):
 async def synthesize_chunks_async(chunks, voice="en-US-JennyNeural"):
     tasks = []
     audio_files = []
-
     for i, chunk in enumerate(chunks):
         clean_chunk = re.sub(r'[^\x00-\x7F]+', ' ', chunk)
         filename = os.path.join(AUDIO_FOLDER, f'chunk_{i}.mp3')
         tasks.append(synthesize_chunk(clean_chunk, filename, voice))
         audio_files.append(f'chunk_{i}.mp3')
-
     await asyncio.gather(*tasks)
     return audio_files
 
@@ -68,23 +65,14 @@ def index():
 
 @app.route('/upload', methods=['POST'])
 def upload_epub():
-    print("=== /upload called ===")
-    print("Form keys:", list(request.form.keys()))
-    print("File keys:", list(request.files.keys()))
-
     if 'epub' not in request.files:
-        print("ERROR: No file part named 'epub' in request.files")
         return jsonify({'error': 'No file part named "epub" in the request'}), 400
 
     file = request.files['epub']
-    print(f"Received file: {file.filename}")
-
     if file.filename == '':
-        print("ERROR: No selected file")
         return jsonify({'error': 'No selected file'}), 400
 
     if not file.filename.lower().endswith('.epub'):
-        print("ERROR: File is not an EPUB")
         return jsonify({'error': 'File must be an EPUB (.epub)'}), 400
 
     voice = request.form.get('voice', '').strip()
@@ -94,19 +82,11 @@ def upload_epub():
     filepath = os.path.join(UPLOAD_FOLDER, file.filename)
     try:
         file.save(filepath)
-        print(f"Saved file to {filepath}")
-
         title, text = extract_epub_text(filepath)
-        print(f"Extracted text from EPUB: title='{title[:30]}'")
-
         chunks = chunk_text(text)
-        print(f"Number of chunks: {len(chunks)}")
-
         audio_files = run_async(synthesize_chunks_async, chunks, voice=voice)
-        print(f"Generated audio files: {audio_files}")
-
     except Exception as e:
-        print("Exception during processing:")
+        import traceback
         traceback.print_exc()
         return jsonify({'error': 'Processing failed', 'details': str(e)}), 500
 
