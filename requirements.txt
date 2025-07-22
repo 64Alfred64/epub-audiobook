@@ -2,3 +2,4 @@ Flask
 ebooklib
 beautifulsoup4
 edge-tts
+flask-cors
