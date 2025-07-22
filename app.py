@@ -65,14 +65,23 @@ def index():
 
 @app.route('/upload', methods=['POST'])
 def upload_epub():
+    print("=== /upload called ===")
+    print("Form keys:", list(request.form.keys()))
+    print("File keys:", list(request.files.keys()))
+
     if 'epub' not in request.files:
-        return jsonify({'error': 'No file part named "epub" in the request'}), 400
+        print("ERROR: No file part named 'epub' in request.files")
+        return jsonify({'error': 'No file part named \"epub\" in the request'}), 400
 
     file = request.files['epub']
+    print(f"Received file: {file.filename}")
+
     if file.filename == '':
+        print("ERROR: No selected file")
         return jsonify({'error': 'No selected file'}), 400
 
     if not file.filename.lower().endswith('.epub'):
+        print("ERROR: File is not an EPUB")
         return jsonify({'error': 'File must be an EPUB (.epub)'}), 400
 
     voice = request.form.get('voice', '').strip()
@@ -82,10 +91,19 @@ def upload_epub():
     filepath = os.path.join(UPLOAD_FOLDER, file.filename)
     try:
         file.save(filepath)
+        print(f"Saved file to {filepath}")
+
         title, text = extract_epub_text(filepath)
+        print(f"Extracted text from EPUB: title='{title[:30]}'")
+
         chunks = chunk_text(text)
+        print(f"Number of chunks: {len(chunks)}")
+
         audio_files = run_async(synthesize_chunks_async, chunks, voice=voice)
+        print(f"Generated audio files: {audio_files}")
+
     except Exception as e:
+        print("Exception during processing:")
         import traceback
         traceback.print_exc()
         return jsonify({'error': 'Processing failed', 'details': str(e)}), 500
