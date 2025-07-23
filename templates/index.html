@@ -1,43 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>EPUB to Audio</title>
+    <meta charset="UTF-8" />
+    <title>EPUB to Audio</title>
 </head>
 <body>
-  <h1>EPUB to Audio Converter</h1>
-  <form id="uploadForm" enctype="multipart/form-data">
-    <input type="file" name="file" accept=".epub" required />
-    <select name="voice">
-      <option value="en-US-JennyNeural">Jenny (en-US)</option>
-      <option value="en-US-GuyNeural">Guy (en-US)</option>
-    </select>
-    <button type="submit">Convert</button>
-  </form>
+    <h1>Upload EPUB File</h1>
+    <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
+        <input type="file" id="epubFile" name="file" accept=".epub" required />
+        <button type="submit">Convert</button>
+    </form>
+    <div id="result"></div>
 
-  <div id="output"></div>
+    <script>
+        const form = document.getElementById("uploadForm");
+        const resultDiv = document.getElementById("result");
 
-  <script>
-    document.getElementById("uploadForm").addEventListener("submit", async function (e) {
-      e.preventDefault();
-      const form = e.target;
-      const formData = new FormData(form);
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
 
-      const res = await fetch("/convert", {
-        method: "POST",
-        body: formData,
-      });
+            try {
+                const response = await fetch("/upload", {
+                    method: "POST",
+                    body: formData
+                });
 
-      const data = await res.json();
-      const output = document.getElementById("output");
+                const result = await response.json();
 
-      if (res.ok) {
-        output.innerHTML = `<p>Text: ${data.text.slice(0, 500)}...</p><audio controls src="${data.audioUrl}"></audio>`;
-      } else {
-        output.innerHTML = `<p style="color:red;">Error: ${data.error}</p>`;
-      }
-    });
-  </script>
+                if (response.ok) {
+                    resultDiv.textContent = `✅ ${result.message}`;
+                } else {
+                    resultDiv.textContent = `❌ ${result.error}`;
+                }
+            } catch (error) {
+                resultDiv.textContent = "❌ Upload failed.";
+            }
+        });
+    </script>
 </body>
 </html>
