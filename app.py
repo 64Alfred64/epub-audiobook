@@ -69,8 +69,13 @@ def index():
 
 @app.route('/upload', methods=['POST'])
 def upload_epub():
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file part named "file" in the request'}), 400
+    print("==> Upload received")
+print("request.files:", request.files)
+print("request.form:", request.form)
+
+if 'file' not in request.files:
+    return jsonify({'error': 'No file part named \"file\" in the request'}), 400
+
 
     file = request.files['file']
     if file.filename == '':
