@@ -42,6 +42,31 @@ def extract_epub_chapters(path):
     title_meta = book.get_metadata('DC', 'title')
     title = title_meta[0][0] if title_meta else "Untitled EPUB"
 
+    # Extract cover image (if present)
+    cover_image = None
+    # Try EPUB3 cover extraction
+    cover_id = None
+    for k, v in book.metadata.items():
+        if k[1].lower() == 'cover':
+            cover_id = v[0][0]
+            break
+    if cover_id:
+        cover_item = book.get_item_with_id(cover_id)
+        if cover_item:
+            import base64
+            mime = cover_item.media_type or 'image/jpeg'
+            b64 = base64.b64encode(cover_item.get_content()).decode('utf-8')
+            cover_image = f"data:{mime};base64,{b64}"
+    # Fallback: look for first image named 'cover' or similar
+    if not cover_image:
+        for item in book.get_items_of_type(ITEM_IMAGE):
+            if 'cover' in item.file_name.lower():
+                import base64
+                mime = item.media_type or 'image/jpeg'
+                b64 = base64.b64encode(item.get_content()).decode('utf-8')
+                cover_image = f"data:{mime};base64,{b64}"
+                break
+
     # Build a map of id -> document for quick lookup
     doc_map = {item.get_id(): item for item in book.get_items_of_type(ITEM_DOCUMENT)}
     img_map = {item.file_name: item for item in book.get_items_of_type(ITEM_IMAGE)}
@@ -165,7 +190,7 @@ def extract_epub_chapters(path):
             chapter_indices.append({'title': title, 'index': start_idx})
             all_chunks.extend(ch_chunks)
 
-    return title, all_chunks, chapter_indices
+    return title, all_chunks, chapter_indices, cover_image
 
 # ← TTS functions stay the same ↓
 
@@ -192,14 +217,14 @@ def upload_epub():
     f.save(epub_path)
 
     try:
-        title, chunks, chapters = extract_epub_chapters(epub_path)
+        title, chunks, chapters, cover_image = extract_epub_chapters(epub_path)
     except Exception as e:
         traceback.print_exc()
         return jsonify(error="Failed to extract text", details=str(e)), 500
 
     uploads[uid] = {'chunks': chunks, 'voice': voice}
     # Now also return chapters = list of {title, index}
-    return jsonify(upload_id=uid, text_chunks=chunks, chapters=chapters)
+    return jsonify(upload_id=uid, text_chunks=chunks, chapters=chapters, book_title=title, cover_image=cover_image)
 
 @app.route('/chunk', methods=['POST'])
 def get_chunk():
