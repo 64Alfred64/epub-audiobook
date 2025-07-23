@@ -263,7 +263,7 @@
         <button id="searchNextBtn" title="Next match" style="background:#23232a;color:#aaa;border:none;border-radius:4px;padding:0.4em 0.7em;font-size:1em;cursor:pointer;">&#8595;</button>
         <span id="searchCount" style="color:#aaa;font-size:0.95em;margin-left:0.5em;"></span>
       </div>
-      <div id="textDisplay" style="flex:1 1 auto;overflow-y:auto;min-height:0;max-height:calc(100vh - 60px - 112px);padding:0 1.5rem;"> </div>
+      <div id="textDisplay" style="display:block;flex:1 1 auto;overflow-y:auto;min-height:120px;height:auto;max-height:calc(100vh - 60px - 112px);padding:0 1.5rem;"> </div>
     </div>
     <div class="media-controls col-span-2 row-start-2 w-full bg-black border-t border-[#333] p-4 z-[1000] flex flex-col gap-2" id="mediaControls" style="position:sticky; bottom:0; left:0; right:0;">
       <div class="progress-container flex items-center gap-3 mb-2">
@@ -463,11 +463,12 @@
         }
       });
       statusDiv.textContent = 'Click a chapter or paragraph to play.';
-      // Scroll text area into view and show first paragraph
+      // Always show the text area at the top after upload and scroll it into view
+      textDiv.scrollTop = 0;
+      textDiv.style.display = 'block';
+      textDiv.style.minHeight = '120px';
       setTimeout(() => {
-        textDiv.scrollTop = 0;
-        const firstP = textDiv.querySelector('p, h2, img');
-        if (firstP) scrollElementIntoContainer(firstP, textDiv);
+        textDiv.scrollIntoView({behavior:'smooth'});
       }, 100);
     });
     chapterList.addEventListener('click', e => {
