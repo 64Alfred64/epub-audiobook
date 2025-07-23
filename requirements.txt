@@ -1,5 +1,5 @@
-Flask
+flask
 flask-cors
+edge-tts
 ebooklib
 beautifulsoup4
-edge-tts
