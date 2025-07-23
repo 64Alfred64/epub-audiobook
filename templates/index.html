@@ -16,7 +16,6 @@
       overflow: hidden;
     }
 
-    /* SIDEBAR */
     #sidebar {
       width: 250px;
       background: #1f1f1f;
@@ -53,6 +52,28 @@
     #chapterList li:hover {
       background: rgba(76,139,245,0.2);
     }
+    #sidebar-close {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      width: 2.5rem;
+      height: 2.5rem;
+      background: #4c8bf5;
+      border: none;
+      border-radius: 50%;
+      color: #fff;
+      font-size: 1.4rem;
+      cursor: pointer;
+      z-index: 1102;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 1px 1px 4px rgba(0,0,0,0.5);
+      transition: background 0.2s;
+    }
+    #sidebar-close:focus {
+      outline: 2px solid #fff;
+    }
 
     /* Hamburger styles */
     #hamburger {
@@ -80,12 +101,7 @@
     #hamburger.open {
       background: #3a6fe2;
     }
-    /* Hide #toggle-btn (old button INSIDE sidebar) */
-    #toggle-btn {
-      display: none !important;
-    }
 
-    /* Overlay for closing sidebar */
     #sidebar-overlay {
       display: none;
       position: fixed;
@@ -98,7 +114,6 @@
       display: block;
     }
 
-    /* MAIN */
     #main {
       flex: 1;
       display: flex;
@@ -170,59 +185,45 @@
     }
     @media (max-width: 700px) {
       #textDisplay {
-        padding: 1em 0.5em 1.5em 0.5em;
+        padding: 1em 0.5em 4.5em 0.5em; /* more bottom padding for player */
         max-width: 100vw;
         border-radius: 0;
       }
     }
-
-    /* EPUB AUDIO PLAYER (unchanged) */
-    .eleven-player {
+    /* --- Floating Audio Player at Bottom --- */
+    .audio-bar-bottom {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100vw;
+      background: #181818;
+      box-shadow: 0 -2px 16px rgba(0,0,0,0.6);
+      z-index: 2000;
       display: flex;
       align-items: center;
-      background: #1f1f1f;
-      padding: 0.75rem 1rem;
-      border-radius: 8px;
-      gap: 0.75rem;
-      max-width: 600px;
-      width: 100%;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-      margin-top: 2rem;
+      padding: 0.5em 1em;
+      gap: 0.5em;
+      min-height: 56px;
+      max-width: 100vw;
     }
-    .eleven-player button {
-      background: #292929;
-      border: none;
-      color: #fff;
-      border-radius: 6px;
-      padding: 0.4rem 0.6rem;
-      font-size: 0.85rem;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    .eleven-player button:hover {
-      background: #3a3a3a;
-    }
-    .progress-group {
+    .audio-bar-bottom .progress-group {
       flex: 1;
       display: flex;
       align-items: center;
       gap: 0.5rem;
+      min-width: 0;
     }
-    .time {
-      width: 2.5rem;
-      text-align: center;
-      font-size: 0.85rem;
-      color: #aaa;
-    }
-    .progress {
+    .audio-bar-bottom .progress {
       flex: 1;
       height: 4px;
       background: #333;
       border-radius: 2px;
       -webkit-appearance: none;
       cursor: pointer;
+      min-width: 0;
     }
-    .progress::-webkit-slider-thumb {
+    .audio-bar-bottom .progress::-webkit-slider-thumb {
       -webkit-appearance: none;
       width: 12px;
       height: 12px;
@@ -230,13 +231,65 @@
       border-radius: 50%;
       margin-top: -4px;
     }
+    .audio-bar-bottom button, .audio-bar-bottom select {
+      background: #292929;
+      border: none;
+      color: #fff;
+      border-radius: 6px;
+      padding: 0.4rem 0.7rem;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin: 0 .15em;
+    }
+    .audio-bar-bottom button:hover, .audio-bar-bottom select:hover {
+      background: #3a3a3a;
+    }
+    .audio-bar-bottom select {
+      font-size: 1rem;
+      padding-right: 2em;
+    }
+    .audio-bar-bottom .voice-label {
+      margin-left: .5em;
+      font-size: 1em;
+      color: #bbb;
+      min-width: 60px;
+      text-align: right;
+    }
+    .audio-bar-bottom .time {
+      width: 2.5rem;
+      text-align: center;
+      font-size: 0.95em;
+      color: #aaa;
+      flex-shrink: 0;
+    }
+    @media (max-width: 700px) {
+      .audio-bar-bottom {
+        padding: 0.3em 0.2em;
+        min-height: 48px;
+      }
+      #main {
+        padding-bottom: 56px; /* prevent content underlap */
+      }
+    }
+    @media (min-width: 700px) {
+      .audio-bar-bottom {
+        left: 0;
+        width: calc(100vw - 250px);
+        margin-left: 250px;
+        max-width: 100vw;
+      }
+    }
+    /* Hide the old audio player (if any) */
+    .eleven-player { display: none !important; }
   </style>
 </head>
 <body>
-  <!-- Hamburger icon OUTSIDE sidebar, visible on mobile -->
-  <button id="hamburger" aria-label="Open sidebar">☰</button>
+  <!-- Hamburger icon on the left -->
+  <button id="hamburger" aria-label="Open chapters sidebar">☰</button>
 
   <div id="sidebar">
+    <button id="sidebar-close" aria-label="Close chapters sidebar">✕</button>
     <h2>Chapters</h2>
     <ul id="chapterList"></ul>
   </div>
@@ -253,35 +306,48 @@
     </form>
     <div id="status"></div>
     <div id="textDisplay"></div>
-    <div class="eleven-player">
-      <button id="rewindBtn">⏪ 15s</button>
-      <button id="stopBtn">⏹️ Stop</button>
-      <button id="playBtn">▶️</button>
-      <div class="progress-group">
-        <span class="time current">0:00</span>
-        <input type="range" class="progress" min="0" max="100" value="0"/>
-        <span class="time total">0:00</span>
-      </div>
-      <button id="forwardBtn">⏩ 15s</button>
-      <span class="voice-label">Jenny</span>
+  </div>
+
+  <!-- Floating audio player at the bottom -->
+  <div class="audio-bar-bottom" id="floatingPlayer" style="display: flex;">
+    <button id="rewindBtn" title="Back 15 seconds">⏪</button>
+    <button id="stopBtn" title="Stop">⏹️</button>
+    <button id="playBtn" title="Play/Pause">▶️</button>
+    <div class="progress-group">
+      <span class="time current">0:00</span>
+      <input type="range" class="progress" min="0" max="100" value="0"/>
+      <span class="time total">0:00</span>
     </div>
+    <button id="forwardBtn" title="Forward 15 seconds">⏩</button>
+    <select id="speedSelect" title="Playback speed">
+      <option value="1">1x</option>
+      <option value="1.25">1.25x</option>
+      <option value="1.5">1.5x</option>
+      <option value="1.75">1.75x</option>
+      <option value="2">2x</option>
+      <option value="2.25">2.25x</option>
+      <option value="2.5">2.5x</option>
+    </select>
+    <span class="voice-label">Jenny</span>
   </div>
 
   <script>
   document.addEventListener('DOMContentLoaded', () => {
     const sidebar     = document.getElementById('sidebar');
     const hamburger   = document.getElementById('hamburger');
+    const sidebarClose= document.getElementById('sidebar-close');
     const overlay     = document.getElementById('sidebar-overlay');
     const chapterList = document.getElementById('chapterList');
     const form        = document.getElementById('uploadForm');
     const textDiv     = document.getElementById('textDisplay');
     const statusDiv   = document.getElementById('status');
     const voiceSelect = document.getElementById('voiceSelect');
-    const player      = document.querySelector('.eleven-player');
+    const player      = document.getElementById('floatingPlayer');
     const playBtn     = document.getElementById('playBtn');
     const stopBtn     = document.getElementById('stopBtn');
     const rewindBtn   = document.getElementById('rewindBtn');
     const forwardBtn  = document.getElementById('forwardBtn');
+    const speedSelect = document.getElementById('speedSelect');
     const prog        = player.querySelector('.progress');
     const curTime     = player.querySelector('.current');
     const totTime     = player.querySelector('.total');
@@ -290,23 +356,21 @@
     audio.preload = 'metadata';
     let uploadId, chunks = [], cache = {}, currentIdx = 0, playingSeq = false;
 
-    // --- Sidebar hamburger logic ---
+    // Sidebar open/close logic
     function openSidebar() {
       sidebar.classList.add('open');
       hamburger.classList.add('open');
       overlay.style.display = 'block';
-      hamburger.setAttribute('aria-label', 'Close sidebar');
+      hamburger.setAttribute('aria-label', 'Close chapters sidebar');
     }
     function closeSidebar() {
       sidebar.classList.remove('open');
       hamburger.classList.remove('open');
       overlay.style.display = 'none';
-      hamburger.setAttribute('aria-label', 'Open sidebar');
+      hamburger.setAttribute('aria-label', 'Open chapters sidebar');
     }
-    hamburger.addEventListener('click', () => {
-      if (sidebar.classList.contains('open')) closeSidebar();
-      else openSidebar();
-    });
+    hamburger.addEventListener('click', openSidebar);
+    sidebarClose.addEventListener('click', closeSidebar);
     overlay.addEventListener('click', closeSidebar);
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') closeSidebar();
@@ -339,7 +403,6 @@
       statusDiv.textContent = 'Extracting text…';
       textDiv.innerHTML = '';
       chapterList.innerHTML = '';
-      player.style.display = 'flex';
       cache = {};
 
       const fd = new FormData(form);
@@ -354,7 +417,6 @@
 
       // --- Improved Chapter Detection ---
       let chapters = data.chapters || [];
-      // Heuristic detection if backend fails
       if (!chapters || chapters.length === 0) {
         chapters = [];
         function looksLikeChapter(text) {
@@ -439,7 +501,6 @@
       playingSeq = true;
       currentIdx = idx;
       voiceLabel.textContent = voiceSelect.value || 'Jenny';
-      player.style.display = 'flex';
       playChunk(idx);
     }
 
@@ -478,13 +539,14 @@
       audio.currentTime = (e.target.value / 100) * audio.duration;
     };
 
-    // PLAY/PAUSE
     playBtn.onclick = () => {
-      if (audio.paused) audio.play();
-      else audio.pause();
+      if (audio.paused) {
+        audio.play();
+      } else {
+        audio.pause();
+      }
     };
 
-    // STOP
     stopBtn.onclick = () => {
       audio.pause();
       audio.currentTime = 0;
@@ -492,15 +554,21 @@
       textDiv.querySelectorAll('p, h2').forEach(p => p.classList.remove('highlight'));
     };
 
-    // ⏪ BACKWARD 15s
     rewindBtn.onclick = () => {
       audio.currentTime = Math.max(0, audio.currentTime - 15);
     };
 
-    // ⏩ FORWARD 15s
     forwardBtn.onclick = () => {
       audio.currentTime = Math.min(audio.duration, audio.currentTime + 15);
     };
+
+    // Playback speed control
+    speedSelect.addEventListener('change', () => {
+      audio.playbackRate = parseFloat(speedSelect.value);
+    });
+    // Set default playback rate
+    audio.playbackRate = parseFloat(speedSelect.value);
+
   });
   </script>
 </body>
