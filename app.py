@@ -1,6 +1,6 @@
 import os, uuid, hashlib, asyncio
 from flask import Flask, request, jsonify, send_file, render_template
-from ebooklib import epub
+from ebooklib import epub, ITEM_DOCUMENT
 from bs4 import BeautifulSoup
 import nltk
 from nltk.tokenize import sent_tokenize
@@ -19,7 +19,7 @@ CACHE_DIR = '/tmp/epub_audio'
 def extract_text(epub_path):
     book = epub.read_epub(epub_path)
     parts = []
-    for item in book.get_items_of_type(epub.ITEM_DOCUMENT):
+    for item in book.get_items_of_type(ITEM_DOCUMENT):
         soup = BeautifulSoup(item.get_content(), 'html.parser')
         text = soup.get_text(separator=' ').strip()
         if text:
