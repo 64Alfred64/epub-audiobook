@@ -17,74 +17,59 @@
       overflow: hidden;
     }
     #sidebar {
-      position: fixed;
-      left: 0; right: 0; bottom: 0;
-      width: 100vw;
-      height: 4.5rem;
-      max-height: 4.5rem;
+      width: 250px;
       background: #1f1f1f;
-      padding: 0.5rem 0.5rem 0.5rem 0.5rem;
-      transform: translateY(100%);
-      transition: transform 0.3s cubic-bezier(.4,0,.2,1);
-      overflow-x: auto;
-      overflow-y: hidden;
-      box-shadow: 0 -2px 8px rgba(0,0,0,0.5);
-      z-index: 3000;
-      display: flex;
-      flex-direction: row;
-      align-items: center;
+      padding: 1rem;
+      transform: translateX(-250px);
+      transition: transform 0.3s ease;
+      overflow-y: auto;
+      box-shadow: 2px 0 6px rgba(0,0,0,0.5);
+      z-index: 1001;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      height: 100vh;
     }
     #sidebar.open {
-      transform: translateY(0);
+      transform: translateX(0);
     }
     #sidebar h2 {
-      display: none;
+      margin-top: 0;
+      margin-bottom: 1rem;
+      font-size: 1.2rem;
+      font-weight: 600;
     }
     #chapterList {
       list-style: none;
       padding: 0;
       margin: 0;
-      display: flex;
-      flex-direction: row;
-      gap: 0.5rem;
-      width: 100%;
-      overflow-x: auto;
-      align-items: center;
     }
     #chapterList li {
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
+      padding: 0.5rem 0.75rem;
+      border-radius: 4px;
       cursor: pointer;
       transition: background 0.2s;
-      background: #232323;
-      color: #fff;
-      font-size: 1rem;
-      white-space: nowrap;
-      display: flex;
-      align-items: center;
-      height: 2.5rem;
     }
     #chapterList li:hover {
       background: rgba(76,139,245,0.2);
     }
     #sidebar-close {
-      position: static;
-      margin-left: auto;
-      margin-right: 0.5rem;
-      width: 2rem;
-      height: 2rem;
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      width: 2.5rem;
+      height: 2.5rem;
       background: #4c8bf5;
       border: none;
       border-radius: 50%;
       color: #fff;
-      font-size: 1.2rem;
+      font-size: 1.4rem;
       cursor: pointer;
+      z-index: 1102;
       display: flex;
       align-items: center;
       justify-content: center;
       box-shadow: 1px 1px 4px rgba(0,0,0,0.5);
       transition: background 0.2s;
-      flex-shrink: 0;
     }
     #sidebar-close:focus {
       outline: 2px solid #fff;
@@ -185,9 +170,12 @@
         padding-bottom: 4.5rem;
       }
       #sidebar {
-        height: 4.5rem;
-        max-height: 4.5rem;
-        padding: 0.25rem 0.25rem;
+        position: fixed;
+        left: 0; right: 0; bottom: 0;
+        width: 100vw;
+        height: 100vh;
+        max-height: 100vh;
+        padding: 1rem 0.5rem;
       }
       #chapterList li {
         font-size: 0.95rem;
@@ -197,8 +185,8 @@
     }
     @media (min-width: 700px) {
       #main {
-        margin-left: 0;
-        width: 100vw;
+        margin-left: 250px;
+        width: calc(100vw - 250px);
         padding-bottom: 4.5rem;
       }
     }
@@ -211,8 +199,9 @@
     <svg width="28" height="28" viewBox="0 0 28 28" class="mx-auto"><rect width="24" height="3" x="2" y="6" rx="1.5" fill="currentColor"/><rect width="24" height="3" x="2" y="13" rx="1.5" fill="currentColor"/><rect width="24" height="3" x="2" y="20" rx="1.5" fill="currentColor"/></svg>
   </button>
   <div id="sidebar">
-    <ul id="chapterList"></ul>
     <button id="sidebar-close" aria-label="Close chapters sidebar">✕</button>
+    <h2>Chapters</h2>
+    <ul id="chapterList"></ul>
   </div>
   <div id="sidebar-overlay"></div>
   <div id="main">
