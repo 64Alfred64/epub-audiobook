@@ -20,10 +20,10 @@
       position: fixed;
       left: 0; right: 0; bottom: 0;
       width: 100vw;
-      max-height: 40vh;
-      height: auto;
+      height: 4.5rem;
+      max-height: 4.5rem;
       background: #1f1f1f;
-      padding: 0.5rem 1rem 0.5rem 1rem;
+      padding: 0.5rem 0.5rem 0.5rem 0.5rem;
       transform: translateY(100%);
       transition: transform 0.3s cubic-bezier(.4,0,.2,1);
       overflow-x: auto;
@@ -32,7 +32,7 @@
       z-index: 3000;
       display: flex;
       flex-direction: row;
-      align-items: flex-start;
+      align-items: center;
     }
     #sidebar.open {
       transform: translateY(0);
@@ -49,6 +49,7 @@
       gap: 0.5rem;
       width: 100%;
       overflow-x: auto;
+      align-items: center;
     }
     #chapterList li {
       padding: 0.5rem 1rem;
@@ -59,6 +60,9 @@
       color: #fff;
       font-size: 1rem;
       white-space: nowrap;
+      display: flex;
+      align-items: center;
+      height: 2.5rem;
     }
     #chapterList li:hover {
       background: rgba(76,139,245,0.2);
@@ -80,6 +84,7 @@
       justify-content: center;
       box-shadow: 1px 1px 4px rgba(0,0,0,0.5);
       transition: background 0.2s;
+      flex-shrink: 0;
     }
     #sidebar-close:focus {
       outline: 2px solid #fff;
@@ -180,12 +185,14 @@
         padding-bottom: 4.5rem;
       }
       #sidebar {
-        max-height: 60vh;
-        padding: 0.25rem 0.5rem;
+        height: 4.5rem;
+        max-height: 4.5rem;
+        padding: 0.25rem 0.25rem;
       }
       #chapterList li {
         font-size: 0.95rem;
         padding: 0.4rem 0.7rem;
+        height: 2.2rem;
       }
     }
     @media (min-width: 700px) {
