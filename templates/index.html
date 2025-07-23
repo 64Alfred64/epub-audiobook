@@ -257,7 +257,7 @@
       <div id="status" style="font-size:0.95rem;color:#bbb;margin-left:16px;"></div>
     </div>
     <div class="main-content col-start-2 row-start-1 bg-black text-white pb-0 pr-0 pl-0 flex flex-col h-full transition-all duration-300" id="mainContent" style="margin-top:60px;">
-      <div id="textDisplay" style="display:block;flex:1 1 auto;overflow-y:auto;min-height:120px;height:auto;max-height:calc(100vh - 60px - 112px);padding:0 1.5rem;"> </div>
+      <div id="reader" style="display:block;visibility:visible;min-height:120px;height:auto;max-height:calc(100vh - 60px - 112px);padding:0 1.5rem;border:2px solid #4c8bf5;box-sizing:border-box;margin:0;"> </div>
       <div id="searchBarContainer" style="width:100%;max-width:900px;margin:0 auto 0.5em auto;display:flex;align-items:center;gap:0.5em;padding:0.5em 0.5em 0 0.5em;position:relative;z-index:2;">
         <span style="display:inline-flex;align-items:center;justify-content:center;width:2em;height:2em;color:#aaa;font-size:1.2em;">
           <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
@@ -352,7 +352,7 @@
     // EPUB logic + audio player
     const chapterList = document.getElementById('chapterList');
     const form        = document.getElementById('uploadForm');
-    const textDiv     = document.getElementById('textDisplay');
+    const textDiv     = document.getElementById('reader');
     const statusDiv   = document.getElementById('status');
     const voiceSelect = document.getElementById('voiceSelect');
     const mainAudio   = document.getElementById('mainAudio');
@@ -425,12 +425,12 @@
       if (chapters.length > 0) {
         await loadAndDisplayChapter(chapters[0].file_name);
       }
-      // Ensure everything is visible and scroll to top after DOM update
+      // Force EPUB content into view after DOM update
       setTimeout(() => {
-        const mainContent = document.getElementById('mainContent');
-        if (mainContent) mainContent.scrollTop = 0;
-        window.scrollTo({ top: 0, behavior: 'instant' });
-      }, 100);
+        const reader = document.getElementById('reader');
+        if (reader) reader.scrollIntoView({ behavior: 'auto', block: 'start' });
+        window.scrollTo({ top: 0, behavior: 'auto' });
+      }, 300);
     });
 
     // Function to load and display a chapter by file_name
@@ -480,12 +480,12 @@
         if (searchInput && searchInput.value && searchInput.value.length > 1) {
           highlightSearch(searchInput.value);
         }
-        // Ensure main content and viewport are scrolled to top after DOM update
+        // Force EPUB content into view after DOM update
         setTimeout(() => {
-          const mainContent = document.getElementById('mainContent');
-          if (mainContent) mainContent.scrollTop = 0;
-          window.scrollTo({ top: 0, behavior: 'instant' });
-        }, 100);
+          const reader = document.getElementById('reader');
+          if (reader) reader.scrollIntoView({ behavior: 'auto', block: 'start' });
+          window.scrollTo({ top: 0, behavior: 'auto' });
+        }, 300);
       } catch (err) {
         statusDiv.textContent = 'Error loading chapter.';
       }
