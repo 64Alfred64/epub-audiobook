@@ -394,7 +394,6 @@
       }
       const data = await res.json();
       uploadId = data.upload_id;
-      chunks   = data.text_chunks;
       let chapters = data.chapters || [];
       // Update book title and cover image
       const bookTitle = data.book_title || 'Untitled EPUB';
@@ -411,59 +410,18 @@
         document.getElementById('mediaBookCover').src = '';
         document.getElementById('mediaBookCover').style.display = 'none';
       }
-      if (!chapters || chapters.length === 0) {
-        chapters = [];
-        function looksLikeChapter(text) {
-          return /^chapter\s+\d+/i.test(text)
-              || /^prologue$/i.test(text)
-              || /^epilogue$/i.test(text)
-              || /^book\s+\d+/i.test(text)
-              || /^part\s+\d+/i.test(text);
-        }
-        chunks.forEach((c, i) => {
-          if (looksLikeChapter(c.trim())) {
-            chapters.push({ title: c.trim(), index: i });
-          }
-        });
-        if(chapters.length === 0) {
-          for (let i = 0; i < chunks.length; i += Math.floor(chunks.length / 10)) {
-            chapters.push({ title: `Chapter ${i + 1}`, index: i });
-          }
-        }
-      }
+      // Render chapter list
       chapterList.innerHTML = '';
-      chapters.forEach(ch => {
+      chapters.forEach((ch, idx) => {
         const li = document.createElement('li');
         li.textContent = ch.title;
-        li.dataset.index = ch.index;
+        li.dataset.fileName = ch.file_name;
         chapterList.appendChild(li);
       });
-      textDiv.innerHTML = '';
-      chunks.forEach((c, i) => {
-        const trimmed = c.trim();
-        if (/^chapter\s+\d+/i.test(trimmed) || /^prologue$/i.test(trimmed) || /^epilogue$/i.test(trimmed)) {
-          const h = document.createElement('h2');
-          h.textContent = trimmed;
-          h.dataset.index = i;
-          textDiv.appendChild(h);
-        } else if (/^data:image\//.test(trimmed) || /\.(jpg|jpeg|png|gif)$/i.test(trimmed)) {
-          const img = document.createElement('img');
-          img.src = trimmed;
-          img.alt = `Image ${i+1}`;
-          img.style.maxWidth = '100%';
-          img.style.display = 'block';
-          img.style.margin = '1.5em auto';
-          img.dataset.index = i;
-          textDiv.appendChild(img);
-        } else {
-          const p = document.createElement('p');
-          p.textContent = c;
-          p.dataset.index = i;
-          textDiv.appendChild(p);
-        }
-      });
-      statusDiv.textContent = 'Click a chapter or paragraph to play.';
-      // Always show the text area at the top after upload and scroll it into view
+      // Load and display the first chapter
+      if (chapters.length > 0) {
+        loadAndDisplayChapter(chapters[0].file_name);
+      }
       textDiv.scrollTop = 0;
       textDiv.style.display = 'block';
       textDiv.style.minHeight = '120px';
@@ -471,13 +429,61 @@
         textDiv.scrollIntoView({behavior:'smooth'});
       }, 100);
     });
+
+    // Function to load and display a chapter by file_name
+    async function loadAndDisplayChapter(fileName) {
+      if (!uploadId || !fileName) return;
+      statusDiv.textContent = 'Loading chapter...';
+      textDiv.innerHTML = '';
+      try {
+        const res = await fetch('/chapter', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ upload_id: uploadId, file_name: fileName })
+        });
+        if (!res.ok) {
+          statusDiv.textContent = `Error: ${await res.text()}`;
+          return;
+        }
+        const data = await res.json();
+        const chunks = data.chunks || [];
+        // Render the chapter content (same as before)
+        chunks.forEach((c, i) => {
+          const trimmed = c.trim();
+          if (/^chapter\s+\d+/i.test(trimmed) || /^prologue$/i.test(trimmed) || /^epilogue$/i.test(trimmed)) {
+            const h = document.createElement('h2');
+            h.textContent = trimmed;
+            h.dataset.index = i;
+            textDiv.appendChild(h);
+          } else if (/^data:image\//.test(trimmed) || /\.(jpg|jpeg|png|gif)$/i.test(trimmed)) {
+            const img = document.createElement('img');
+            img.src = trimmed;
+            img.alt = `Image ${i+1}`;
+            img.style.maxWidth = '100%';
+            img.style.display = 'block';
+            img.style.margin = '1.5em auto';
+            img.dataset.index = i;
+            textDiv.appendChild(img);
+          } else {
+            const p = document.createElement('p');
+            p.textContent = c;
+            p.dataset.index = i;
+            textDiv.appendChild(p);
+          }
+        });
+        statusDiv.textContent = '';
+        textDiv.scrollTop = 0;
+      } catch (err) {
+        statusDiv.textContent = 'Error loading chapter.';
+      }
+    }
+
+    // Update chapter click logic to load chapter on demand
     chapterList.addEventListener('click', e => {
       if (e.target.tagName !== 'LI') return;
-      const idx = Number(e.target.dataset.index);
-      const el = textDiv.querySelector(`[data-index="${idx}"]`);
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        startSequence(idx);
+      const fileName = e.target.dataset.fileName;
+      if (fileName) {
+        loadAndDisplayChapter(fileName);
       }
       if (window.innerWidth < 700) closeSidebar();
     });
