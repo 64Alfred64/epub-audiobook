@@ -1,113 +1,72 @@
+from flask import Flask, request, jsonify, send_from_directory
 import os
-import re
-import asyncio
-import traceback
-from flask import Flask, request, jsonify, send_from_directory, render_template
-from flask_cors import CORS
-from edge_tts import Communicate
-from ebooklib import epub, ITEM_DOCUMENT
+from werkzeug.utils import secure_filename
+from ebooklib import epub
 from bs4 import BeautifulSoup
+import uuid
+import subprocess
 
 app = Flask(__name__)
-CORS(app)
-
 UPLOAD_FOLDER = 'uploads'
-AUDIO_FOLDER = 'audio_chunks'
+AUDIO_FOLDER = 'audio'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['AUDIO_FOLDER'] = AUDIO_FOLDER
+
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(AUDIO_FOLDER, exist_ok=True)
 
-VOICES = [
-    "en-AU-NatashaNeural", "en-AU-WilliamNeural", "en-CA-ClaraNeural", "en-CA-LiamNeural",
-    "en-GB-LibbyNeural", "en-GB-RyanNeural", "en-GB-SoniaNeural", "en-IN-NeerjaNeural",
-    "en-IN-PriyaNeural", "en-US-AriaNeural", "en-US-GuyNeural", "en-US-JennyNeural",
-    "en-US-MichelleNeural", "en-US-TonyNeural"
-]
-
-def clean_text(text):
-    text = text.replace('\u200b', '')  # zero-width space
-    text = text.replace('\xa0', ' ')   # non-breaking space
-    return re.sub(r'[^\x00-\x7F]+', ' ', text)  # remove non-ascii
-
-def extract_epub_text(epub_path):
-    book = epub.read_epub(epub_path)
-    title = book.get_metadata('DC', 'title')
-    title_str = title[0][0] if title else "Untitled EPUB"
-    text = ""
-    for doc in book.get_items_of_type(ITEM_DOCUMENT):
-        soup = BeautifulSoup(doc.get_body_content(), 'html.parser')
-        text += soup.get_text(separator=' ', strip=True) + " "
-    return title_str, clean_text(text)
-
-def chunk_text(text):
-    sentences = re.split(r'(?<=[.?!])\s+', text)
-    return [s.strip() for s in sentences if s.strip()]
-
-async def synthesize_chunk(text, filename, voice="en-US-JennyNeural"):
-    communicate = Communicate(text=text, voice=voice)
-    await communicate.save(filename)
-
-async def synthesize_chunks_async(chunks, voice="en-US-JennyNeural"):
-    tasks = []
-    audio_files = []
-
-    for i, chunk in enumerate(chunks):
-        clean_chunk = re.sub(r'[^\x00-\x7F]+', ' ', chunk)
-        filename = os.path.join(AUDIO_FOLDER, f'chunk_{i}.mp3')
-        tasks.append(synthesize_chunk(clean_chunk, filename, voice))
-        audio_files.append(f'chunk_{i}.mp3')
-
-    await asyncio.gather(*tasks)
-    return audio_files
-
-def run_async(func, *args, **kwargs):
-    return asyncio.run(func(*args, **kwargs))
-
 @app.route('/')
 def index():
-    return render_template('index.html', voices=VOICES)
+    return send_from_directory('.', 'index.html')
 
-@app.route('/upload', methods=['POST'])
-def upload_epub():
-    print("==> Upload received")
-    print("request.files:", request.files)
-    print("request.form:", request.form)
-
+@app.route('/convert', methods=['POST'])
+def convert():
     if 'file' not in request.files:
         return jsonify({'error': 'No file part named "file" in the request'}), 400
 
     file = request.files['file']
+    voice = request.form.get('voice', 'en-US-JennyNeural')
+
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
 
-    if not file.filename.lower().endswith('.epub'):
-        return jsonify({'error': 'File must be an EPUB (.epub)'}), 400
+    filename = secure_filename(file.filename)
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    file.save(file_path)
 
-    voice = request.form.get('voice', '').strip()
-    if not voice or voice not in VOICES:
-        voice = 'en-US-JennyNeural'
+    # Extract text
+    try:
+        book = epub.read_epub(file_path)
+        text = ''
+        for item in book.get_items():
+            if item.get_type() == ebooklib.ITEM_DOCUMENT:
+                soup = BeautifulSoup(item.get_content(), 'html.parser')
+                text += soup.get_text()
+    except Exception as e:
+        return jsonify({'error': f'Failed to parse EPUB: {str(e)}'}), 500
 
-    filepath = os.path.join(UPLOAD_FOLDER, file.filename)
-    file.save(filepath)
+    # Generate audio
+    audio_id = str(uuid.uuid4())
+    audio_path = os.path.join(app.config['AUDIO_FOLDER'], f'{audio_id}.mp3')
 
     try:
-        title, text = extract_epub_text(filepath)
-        chunks = chunk_text(text)
-        audio_files = run_async(synthesize_chunks_async, chunks, voice=voice)
+        subprocess.run([
+            'edge-tts',
+            '--voice', voice,
+            '--text', text[:5000],  # limit length
+            '--write-media', audio_path
+        ], check=True)
     except Exception as e:
-        print("Error during TTS synthesis:")
-        traceback.print_exc()
-        return jsonify({'error': 'TTS synthesis failed', 'details': str(e)}), 500
+        return jsonify({'error': f'TTS generation failed: {str(e)}'}), 500
 
     return jsonify({
-        'title': title,
-        'text_chunks': chunks,
-        'audio_files': audio_files
+        'text': text[:5000],
+        'audioUrl': f'/audio/{audio_id}.mp3'
     })
 
 @app.route('/audio/<filename>')
-def get_audio(filename):
-    return send_from_directory(AUDIO_FOLDER, filename)
+def serve_audio(filename):
+    return send_from_directory(app.config['AUDIO_FOLDER'], filename)
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(debug=True)
