@@ -2,25 +2,27 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>EPUB Audio Reader</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css" rel="stylesheet">
   <style>
     body {
       font-family: 'Inter', sans-serif;
-      background: #000;
-      color: #ececec;
+      background: #121212;
+      color: #eee;
       margin: 0;
-      width: 100vw;
+      display: flex;
       height: 100vh;
       overflow: hidden;
     }
     #sidebar {
       width: 250px;
-      background: #000;
+      background: #1f1f1f;
       padding: 1rem;
+      transform: translateX(-250px);
+      transition: transform 0.3s ease;
       overflow-y: auto;
-      max-height: 100vh;
       box-shadow: 2px 0 6px rgba(0,0,0,0.5);
       z-index: 1001;
       position: fixed;
@@ -117,90 +119,55 @@
       margin-left: 0;
       transition: margin 0.3s;
       width: 100vw;
-      padding-bottom: 6.5rem;
+      padding-bottom: 4.5rem;
     }
-    /* Reading area - desktop and mobile responsive */
-    #epubContent.epub-content-area {
-      background: #000;
-      color: #ececec;
+    #textDisplay {
+      margin: 3em auto 0 auto;
       max-width: 700px;
       width: 100%;
-      margin: 1.25em auto 1em auto;
-      padding: 1.25em 1.5em 2em 1.5em;
+      padding: 2em 1.5em 3em 1.5em;
+      background: #181818;
       border-radius: 16px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.7);
-      font-family: 'Georgia','Times New Roman',serif;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.22);
+      font-family: 'Georgia', 'Times New Roman', serif;
       font-size: 1.18em;
       line-height: 1.75;
-      min-height: 120px;
-      transition: background 0.2s, color 0.2s;
-      word-break: break-word;
-      overflow-wrap: break-word;
-      -webkit-overflow-scrolling: touch;
+      color: #ececec;
+      letter-spacing: 0.01em;
+      transition: all 0.2s;
+    }
+    #textDisplay h1, #textDisplay h2, #textDisplay h3 {
+      font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+      color: #f6f6f6;
+      margin-top: 2.5em;
+      margin-bottom: 1.5em;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      text-align: center;
+    }
+    #textDisplay p {
+      margin: 0 0 1.4em 0;
+      text-align: justify;
+      text-indent: 2em;
+      font-size: 1.18em;
+      line-height: 1.75;
+    }
+    #textDisplay p + h1, #textDisplay p + h2, #textDisplay p + h3 {
+      margin-top: 2.5em;
+    }
+    .highlight {
+      background: rgba(76,139,245,0.18);
+      border-left: 4px solid #4c8bf5;
+      padding-left: 0.5em;
     }
     @media (max-width: 700px) {
-      #epubContent.epub-content-area {
-        padding: 1em 0.75em 3.5em 0.75em;
+      #textDisplay {
+        padding: 1em 0.5em 4.5em 0.5em;
         max-width: 100vw;
         border-radius: 0;
-        margin: 1em auto 1em auto;
-        font-size: 1.08em;
-        line-height: 1.85;
       }
-      .sidebar {
-        width: 100vw;
-        min-width: 0;
-        max-width: 100vw;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        padding: 1.2em 0.5em 2em 0.5em;
-        border-radius: 0;
-        box-shadow: 0 4px 24px 0 rgba(0,0,0,0.7);
-        z-index: 1101;
-        transition: transform 0.3s cubic-bezier(.4,0,.2,1);
-      }
-      .sidebar-header {
-        gap: 0.3em;
-        min-width: 0;
-      }
-      .chapter-list-item {
-        font-size: 1.05em;
-        padding: 0.7em 0.9em;
-        min-height: 2.5em;
-        border-radius: 8px;
-      }
-      .media-controls {
-        padding: 1em 0.5em 1.5em 0.5em;
-        gap: 1em;
-        font-size: 1.08em;
-        border-radius: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        width: 100vw;
-        min-width: 0;
-        max-width: 100vw;
-      }
-      #searchBarContainer {
-        padding: 0.5em 0.2em 0 0.2em;
-        gap: 0.3em;
-      }
-      #searchInput {
-        font-size: 1.08em;
-        padding: 0.5em 0.7em;
-      }
-      .settings-modal-card-full {
-        max-width: 100vw;
-        width: 100vw;
-        border-radius: 18px 18px 0 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        top: auto;
-        margin: 0 auto;
-        font-size: 1.08em;
-        padding-bottom: env(safe-area-inset-bottom, 0);
+      #main {
+        padding-bottom: 4.5rem;
       }
     }
     @media (min-width: 700px) {
@@ -209,649 +176,120 @@
         width: calc(100vw - 250px);
         padding-bottom: 4.5rem;
       }
+      #sidebar {
+        position: static;
+        transform: none;
+        width: 250px;
+        height: 100vh;
+        z-index: 100;
+      }
     }
     .eleven-player { display: none !important; }
-    @media (max-width: 700px) {
-      .sidebar {
-        position: fixed !important;
-        top: 0; left: 0;
-        height: 100vh;
-        width: 80vw;
-        max-width: 320px;
-        z-index: 1101;
-        background: #000;
-        border-right: 1px solid #333;
-        transform: translateX(-100%);
-        transition: transform 0.3s cubic-bezier(.4,0,.2,1);
-      }
-      .sidebar.open {
-        transform: translateX(0);
-      }
-      .sidebar-overlay {
-        display: block;
-      }
-      .main-content {
-        padding-left: 0 !important;
-      }
-    }
-    @media (min-width: 701px) {
-      .sidebar {
-        transform: none !important;
-        position: static !important;
-        width: 280px;
-        min-width: 280px;
-        max-width: 280px;
-        height: 100vh;
-        z-index: 1001;
-        background: #000;
-        border-right: 1px solid #333;
-      }
-      .sidebar-overlay {
-        display: none !important;
-      }
-      .main-content {
-        padding-left: 280px !important;
-      }
-    }
-    /* EPUB images: responsive and aspect-ratio safe */
-    .epub-img {
-      max-width: 100%;
-      height: auto;
-      display: block;
-      margin: 1.5em auto;
-      border-radius: 8px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.12);
-      background: #111;
-    }
-    /* Theme color palettes */
-    :root {
-      --theme-bg-normal: #000;
-      --theme-bg-soft: #181818;
-      --theme-bg-bold: #000;
-      --theme-bg-gray: #181818;
-      --theme-bg-quiet: #000;
-      --theme-bg-sepia: #19140d;
-      --theme-txt-normal: #ececec;
-      --theme-txt-soft: #e5d6c2;
-      --theme-txt-bold: #fff;
-      --theme-txt-gray: #bdbdbd;
-      --theme-txt-quiet: #e5e7eb;
-      --theme-txt-sepia: #e5d6c2;
-    }
-    /* Smooth transitions for highlights, modals, sidebar */
-    .highlight {
-      background: rgba(76,139,245,0.18);
-      border-left: 4px solid #4c8bf5;
-      padding-left: 0.5em;
-      transition: background 0.2s, border 0.2s;
-    }
-    .sidebar, .settings-modal-card, .settings-modal-overlay, .media-controls, #epubContent {
-      transition: background 0.2s, color 0.2s, box-shadow 0.2s;
-    }
-    /* Focus ring for accessibility */
-    .focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
-      outline: 2px solid #2563eb !important;
-      outline-offset: 2px;
-    }
-    /* Custom theme preview swatches */
-    .theme-sample {
-      width: 1.5em;
-      height: 1.5em;
-      border-radius: 4px;
-      border: 1px solid #333;
-      margin-bottom: 0.2em;
-      display: inline-block;
-    }
-    /* Error/status feedback */
-    .status-error { color: #ff4c4c; font-weight: 600; }
-    .status-success { color: #4caf50; font-weight: 600; }
-    .status-info { color: #4c8bf5; font-weight: 600; }
   </style>
 </head>
 <body>
-  <div class="app-container h-screen w-screen grid grid-cols-[auto_1fr] grid-rows-[1fr_auto]">
-    <!-- Hamburger and sidebar overlay removed -->
-    <nav class="sidebar" id="sidebar" aria-label="Book navigation" style="position:fixed;top:0;left:0;height:100vh;width:250px;overflow-y:auto;background:#000;z-index:1101;border-right:1px solid #333;padding:1rem;transition:transform 0.3s cubic-bezier(.4,0,.2,1);">
-      <div class="sidebar-header flex items-center gap-2 mb-4 min-w-0">
-        <button class="back-button control-btn" aria-label="Back to library">&lt;</button>
-        <img id="sidebarCover" src="" alt="Book cover" style="width:56px;height:80px;object-fit:cover;border-radius:6px;background:#222;display:none;margin-right:0.75em;"/>
-        <h2 class="book-title flex-1 text-lg font-bold text-white" id="sidebarBookTitle" aria-label="Book title">Book Title</h2>
-        <button class="menu-button control-btn" aria-label="Sidebar menu">⋯</button>
-      </div>
-      <div class="chapter-list">
-        <h3 class="text-xs font-semibold text-gray-500 mb-2">Chapters</h3>
-        <ul class="chapter-nav" id="chapterList" role="listbox" aria-label="Chapters"></ul>
-      </div>
-    </nav>
-    <!-- Upload Bar -->
-    <header id="mainHeader" style="position:fixed;top:0;left:0;width:100vw;z-index:2147483647;background:#000;border-bottom:1px solid #222;box-shadow:0 4px 24px 0 rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;min-height:56px;padding:0 16px;" role="banner">
-      <h1 style="font-size:1.1rem;font-weight:600;color:#fff;margin:0 16px 0 0;white-space:nowrap;">EPUB Audio Reader</h1>
-      <form id="uploadForm" enctype="multipart/form-data" style="display:flex;flex-direction:row;align-items:center;gap:8px;" aria-label="Upload EPUB">
-        <input type="file" name="file" accept=".epub" required style="font-size:0.95rem;color:#ccc;background:#23232a;border:1px solid #444;border-radius:4px;padding:4px 8px;" aria-label="Choose EPUB file"/>
-        <select id="voiceSelect" name="voice" style="background:#23232a;color:#fff;border:1px solid #444;border-radius:4px;padding:4px 8px;font-size:0.95rem;" aria-label="Voice selection">
-          <option value="">Select Voice (default: Jenny)</option>
-        </select>
-        <button type="submit" style="background:#2563eb;color:#fff;padding:4px 16px;border-radius:4px;font-weight:600;border:none;font-size:0.95rem;">Upload</button>
-      </form>
-      <div id="status" style="font-size:0.95rem;color:#bbb;margin-left:16px;" aria-live="polite"></div>
-    </header>
-    <!-- Main Reading Area -->
-    <main class="main-content col-start-2 row-start-1 bg-black text-white pb-0 pr-0 pl-0 flex flex-col h-full transition-all duration-300" id="mainContent" style="margin-top:72px;background:#000;" aria-label="Reading area">
-      <div id="epubContent" class="epub-content-area" tabindex="0" aria-label="Book text" style="margin-top:72px;"></div>
-      <div id="searchBarContainer" style="width:100%;max-width:900px;margin:0 auto 0.5em auto;display:flex;align-items:center;gap:0.5em;padding:0.5em 0.5em 0 0.5em;position:relative;z-index:2;">
-        <span style="display:inline-flex;align-items:center;justify-content:center;width:2em;height:2em;color:#aaa;font-size:1.2em;">
-          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
-        </span>
-        <input id="searchInput" type="text" placeholder="Search in book..." style="flex:1 1 auto;min-width:0;background:#23232a;color:#fff;border:1px solid #444;border-radius:4px;padding:0.5em 1em;font-size:1em;outline:none;" aria-label="Search in book"/>
-        <button id="searchPrevBtn" title="Previous match" style="background:#23232a;color:#aaa;border:none;border-radius:4px;padding:0.4em 0.7em;font-size:1em;cursor:pointer;" aria-label="Previous search result">&#8593;</button>
-        <button id="searchNextBtn" title="Next match" style="background:#23232a;color:#aaa;border:none;border-radius:4px;padding:0.4em 0.7em;font-size:1em;cursor:pointer;" aria-label="Next search result">&#8595;</button>
-        <span id="searchCount" style="color:#aaa;font-size:0.95em;margin-left:0.5em;" aria-live="polite"></span>
-      </div>
-    </main>
-    <!-- Audio Controls -->
-    <footer class="media-controls col-span-2 row-start-2 w-full bg-black border-t border-[#222] p-4 z-[1000] flex flex-col gap-2" id="mediaControls" style="position:sticky; bottom:0; left:0; right:0;background:#000;" aria-label="Audio controls">
-      <div class="progress-container flex items-center gap-3 mb-2">
-        <span class="time-current text-xs text-gray-400" id="audioTimeCurrent">00:00</span>
-        <div class="progress-bar flex-1 h-1 bg-[#333] rounded relative cursor-pointer mx-2" id="customProgressBar">
-          <div class="progress-fill bg-blue-500 h-1 rounded absolute left-0 top-0" style="width:0%"></div>
-          <div class="progress-handle w-4 h-4 bg-blue-500 rounded-full absolute top-1/2 -translate-y-1/2 left-0" style="left:0%"></div>
-        </div>
-        <span class="time-total text-xs text-gray-400" id="audioTimeTotal">00:00</span>
-      </div>
-      <div class="control-buttons flex items-center justify-between">
-        <div class="media-info flex items-center gap-3">
-          <img class="book-cover w-10 h-10 rounded object-cover bg-[#222]" src="" alt="Book cover" id="mediaBookCover"/>
-          <div class="book-details flex flex-col">
-            <span class="book-title text-sm font-semibold text-white" id="mediaBookTitle">Book Title</span>
-            <span class="narrator text-xs text-gray-400" id="mediaNarrator">Read by Narrator</span>
-          </div>
-        </div>
-        <div class="playback-controls flex items-center gap-2">
-          <button class="control-btn skip-back" id="rewindBtn" aria-label="Rewind 15 seconds">⏮</button>
-          <button class="control-btn play-pause bg-[#333] rounded-full w-12 h-12 flex items-center justify-center text-2xl" id="playBtn" aria-label="Play/Pause">
-            <span id="iconPlay">▶️</span>
-            <span id="iconPause" class="hidden">⏸️</span>
-          </button>
-          <button class="control-btn skip-forward" id="forwardBtn" aria-label="Forward 15 seconds">⏭</button>
-          <button class="control-btn speed" id="speedSelect" aria-label="Playback speed">1x</button>
-        </div>
-        <div class="additional-controls flex items-center gap-2">
-          <button class="control-btn" id="audioBarSettingsBtn" aria-label="Settings">⚙️</button>
-        </div>
-      </div>
-      <audio id="mainAudio" preload="metadata" style="display:none" aria-label="Audio playback"></audio>
-    </footer>
+  <!-- Hamburger icon (always visible) -->
+  <button id="hamburger" aria-label="Open chapters sidebar" class="block">
+    <svg width="28" height="28" viewBox="0 0 28 28" class="mx-auto"><rect width="24" height="3" x="2" y="6" rx="1.5" fill="currentColor"/><rect width="24" height="3" x="2" y="13" rx="1.5" fill="currentColor"/><rect width="24" height="3" x="2" y="20" rx="1.5" fill="currentColor"/></svg>
+  </button>
+  <div id="sidebar">
+    <button id="sidebar-close" aria-label="Close chapters sidebar">✕</button>
+    <h2>Chapters</h2>
+    <ul id="chapterList"></ul>
   </div>
-  <!-- Dynamic Settings Modal injected by script below -->
-
+  <div id="sidebar-overlay"></div>
+  <div id="main">
+    <h1>EPUB Audio Reader</h1>
+    <form id="uploadForm" enctype="multipart/form-data">
+      <input type="file" name="file" accept=".epub" required/>
+      <select id="voiceSelect" name="voice">
+        <option value="">Select Voice (default: Jenny)</option>
+      </select>
+      <button type="submit">Upload EPUB</button>
+    </form>
+    <div id="status"></div>
+    <div id="textDisplay"></div>
+  </div>
+  <!-- Fixed bottom control bar -->
+  <div id="audioBar"
+    class="fixed bottom-0 left-0 w-full flex items-center justify-between gap-1 px-1 sm:px-6 py-1 z-[2000] transition-opacity duration-300 bg-white/80 dark:bg-[#181818]/90 backdrop-blur border-t border-gray-200 dark:border-[#282828] shadow-xl text-gray-800 dark:text-gray-100"
+    style="opacity:1;">
+    <button id="audioBarHamburger"
+      class="flex-shrink-0 mx-1 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-[#232323] focus:outline focus:ring-2 focus:ring-blue-500"
+      aria-label="Show chapters">
+      <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" class="block"><rect width="20" height="2" x="2" y="6" rx="1" fill="currentColor"/><rect width="20" height="2" x="2" y="11" rx="1" fill="currentColor"/><rect width="20" height="2" x="2" y="16" rx="1" fill="currentColor"/></svg>
+    </button>
+    <button id="rewindBtn" class="audio-btn mx-1 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-[#232323] focus:outline focus:ring-2 focus:ring-blue-500" aria-label="Rewind 15 seconds">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 sm:h-8 sm:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M11 18l-7-6 7-6v12zm1-12v12c5 0 8-3 8-6s-3-6-8-6z" stroke="currentColor" stroke-width="2" fill="currentColor"/></svg>
+    </button>
+    <button id="playBtn" class="audio-btn mx-1 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-[#232323] focus:outline focus:ring-2 focus:ring-blue-500" aria-label="Play/Pause">
+      <svg id="iconPlay" xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 sm:h-9 sm:w-9" fill="none" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21" fill="currentColor"/></svg>
+      <svg id="iconPause" xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 sm:h-9 sm:w-9 hidden" fill="none" viewBox="0 0 24 24"><rect x="5" y="3" width="5" height="18" fill="currentColor"/><rect x="14" y="3" width="5" height="18" fill="currentColor"/></svg>
+    </button>
+    <button id="forwardBtn" class="audio-btn mx-1 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-[#232323] focus:outline focus:ring-2 focus:ring-blue-500" aria-label="Forward 15 seconds">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 sm:h-8 sm:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M13 6v12l7-6-7-6zm-1 12V6C7 6 4 9 4 12s3 6 8 6z" stroke="currentColor" stroke-width="2" fill="currentColor"/></svg>
+    </button>
+    <div class="flex-1 flex items-center mx-2 min-w-0">
+      <span id="audioTimeCurrent" class="text-xs w-11 text-right select-none">0:00</span>
+      <input type="range" id="audioProgress" class="flex-1 mx-1 accent-blue-500" min="0" max="100" value="0" aria-label="Playback progress"/>
+      <span id="audioTimeTotal" class="text-xs w-11 text-left select-none">0:00</span>
+    </div>
+    <select id="speedSelect" class="ml-1 mr-1 p-1 rounded text-sm bg-white dark:bg-[#232323] border border-gray-300 dark:border-[#282828] focus:outline focus:ring-2 focus:ring-blue-500"
+      title="Playback speed">
+      <option value="1">1x</option>
+      <option value="1.25">1.25x</option>
+      <option value="1.5">1.5x</option>
+      <option value="1.75">1.75x</option>
+      <option value="2">2x</option>
+      <option value="2.25">2.25x</option>
+      <option value="2.5">2.5x</option>
+    </select>
+    <span class="ml-1 mr-1 text-xs sm:text-base voice-label select-none">Jenny</span>
+    <button id="audioBarSettingsBtn"
+      class="ml-1 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-[#232323] focus:outline focus:ring-2 focus:ring-blue-500"
+      aria-label="Settings">
+      <svg class="h-6 w-6 sm:h-7 sm:w-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M12 8a4 4 0 100 8 4 4 0 000-8zm10 4a2 2 0 00-2-2h-1.26a8.12 8.12 0 00-.46-1.14l.89-.89a2 2 0 00-2.83-2.83l-.89.89A8.12 8.12 0 0014 5.26V4a2 2 0 00-2-2 2 2 0 00-2 2v1.26a8.12 8.12 0 00-1.14.46l-.89-.89a2 2 0 00-2.83 2.83l.89.89A8.12 8.12 0 005.26 10H4a2 2 0 000 4h1.26a8.12 8.12 0 00.46 1.14l-.89.89a2 2 0 002.83 2.83l.89-.89A8.12 8.12 0 0010 18.74V20a2 2 0 004 0v-1.26a8.12 8.12 0 001.14-.46l.89.89a2 2 0 002.83-2.83l-.89-.89A8.12 8.12 0 0018.74 14H20a2 2 0 002-2z"/>
+      </svg>
+    </button>
+    <audio id="mainAudio" preload="metadata" style="display:none"></audio>
+  </div>
+  <!-- Settings Panel Modal injected and removed via script below -->
   <script>
-    // Sidebar mobile toggle logic removed
-    // EPUB logic + audio player
-    const chapterList = document.getElementById('chapterList');
-    const form        = document.getElementById('uploadForm');
-    const statusDiv   = document.getElementById('status');
-    const voiceSelect = document.getElementById('voiceSelect');
-    const mainAudio   = document.getElementById('mainAudio');
-    const playBtn     = document.getElementById('playBtn');
-    const rewindBtn   = document.getElementById('rewindBtn');
-    const forwardBtn  = document.getElementById('forwardBtn');
-    const speedBtn    = document.getElementById('speedSelect');
-    const curTime     = document.getElementById('audioTimeCurrent');
-    const totTime     = document.getElementById('audioTimeTotal');
-    const progressBar = document.getElementById('customProgressBar');
-    const progressFill = progressBar.querySelector('.progress-fill');
-    const progressHandle = progressBar.querySelector('.progress-handle');
-    const bookCover   = document.getElementById('bookCover');
-    const mediaBookTitle = document.getElementById('mediaBookTitle');
-    const mediaNarrator = document.getElementById('mediaNarrator');
-    const epubContent  = document.getElementById('epubContent');
-    let uploadId, chunks = [], cache = {}, currentIdx = 0, playingSeq = false;
-    const voices = [
-      "en-AU-NatashaNeural","en-AU-WilliamNeural",
-      "en-CA-ClaraNeural","en-CA-LiamNeural",
-      "en-GB-LibbyNeural","en-GB-RyanNeural","en-GB-SoniaNeural",
-      "en-IN-NeerjaNeural","en-IN-PriyaNeural",
-      "en-US-AriaNeural","en-US-GuyNeural","en-US-JennyNeural",
-      "en-US-MichelleNeural","en-US-TonyNeural"
-    ];
-    voices.forEach(v => {
-      const o = document.createElement('option');
-      o.value = v;
-      o.textContent = v;
-      voiceSelect.appendChild(o);
-    });
-    let currentChapterFile = null;
+    // REMOVE the old settings modal from the DOM if it exists
+    var oldModal = document.getElementById('settingsOverlay');
+    if (oldModal) oldModal.remove();
 
-    function renderChapterContent(chunks) {
-      if (!epubContent) return;
-      epubContent.innerHTML = '';
-      chunks.forEach((chunk, i) => {
-        if (typeof chunk === 'string') {
-          // Fallback for legacy: treat as paragraph
-          const p = document.createElement('p');
-          p.textContent = chunk;
-          p.dataset.index = i;
-          p.tabIndex = 0;
-          p.style.cursor = 'pointer';
-          p.onclick = () => startSequence(i);
-          epubContent.appendChild(p);
-          return;
-        }
-        if (chunk.type === 'paragraph') {
-          const p = document.createElement('p');
-          p.textContent = chunk.text;
-          p.dataset.index = i;
-          p.tabIndex = 0;
-          p.style.cursor = 'pointer';
-          p.onclick = () => startSequence(i);
-          epubContent.appendChild(p);
-        } else if (chunk.type === 'heading') {
-          const h = document.createElement(chunk.tag || 'h2');
-          h.textContent = chunk.text;
-          h.dataset.index = i;
-          h.tabIndex = 0;
-          h.style.cursor = 'pointer';
-          h.onclick = () => startSequence(i);
-          epubContent.appendChild(h);
-        } else if (chunk.type === 'image') {
-          const img = document.createElement('img');
-          img.src = chunk.src;
-          img.alt = chunk.alt || `Image ${i+1}`;
-          img.className = 'epub-img';
-          img.dataset.index = i;
-          epubContent.appendChild(img);
-        }
-      });
-    }
-
-    form.addEventListener('submit', async e => {
-      e.preventDefault();
-      statusDiv.textContent = 'Extracting text…';
-      chapterList.innerHTML = '';
-      cache = {};
-      const fd = new FormData(form);
-      const res = await fetch('/upload', { method:'POST', body: fd });
-      if (!res.ok) {
-        statusDiv.textContent = `Error: ${await res.text()}`;
-        return;
+    // Open settings panel dynamically
+    document.getElementById("audioBarSettingsBtn").onclick = function openSettingsPanel() {
+      // Remove any old modal
+      var old = document.getElementById('settingsOverlayDynamic');
+      if (old) old.remove();
+      var overlay = document.createElement('div');
+      overlay.id = 'settingsOverlayDynamic';
+      overlay.className = "fixed inset-0 z-[9999] bg-black/40 flex items-center justify-center";
+      overlay.style.backdropFilter = "blur(2px)";
+      overlay.innerHTML = `
+        <div id="settingsPanelModalDynamic" tabindex="0" class="w-full max-w-md mx-auto rounded-2xl shadow-2xl bg-white/95 backdrop-blur-lg border border-gray-100 p-0 overflow-hidden font-sans relative outline-none" role="dialog" aria-modal="true">
+          <button id="settingsPanelCloseBtnDynamic" type="button" class="absolute top-3 right-3 text-gray-500 hover:text-blue-600 text-2xl font-bold" aria-label="Close settings">&times;</button>
+          <header class="w-full py-4 px-6 border-b border-gray-100 bg-gray-50 flex items-center justify-between"><h2 class="font-semibold text-lg tracking-wide text-gray-900">Reading Settings</h2></header>
+          <main class="p-6 space-y-7">
+            <section id="settingsPreview" class="rounded-xl transition-all duration-200 shadow-inner px-6 py-4 border bg-white text-gray-900 font-serif" style="font-size:1.1em;line-height:1.75;letter-spacing:0em;word-spacing:0em;margin:1.5em;text-align:justify;"><div class="mb-1 text-[0.95em] opacity-70 font-medium">Chapter One</div><div>The quick brown fox jumps over the lazy dog. “Reading should be a joy, not a chore,” she thought, as she adjusted her book’s settings.</div></section>
+            <div class="my-2 text-xs text-gray-500">Close with ×, Escape, or click outside.</div>
+            <!-- Add your settings controls here if needed -->
+          </main>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+      document.body.style.overflow = "hidden";
+      function closePanel() {
+        overlay.remove();
+        document.body.style.overflow = "";
+        document.removeEventListener("keydown", keydownHandler);
       }
-      const data = await res.json();
-      uploadId = data.upload_id;
-      let chapters = data.chapters || [];
-      // Update book title and cover image
-      const bookTitle = data.book_title || 'Untitled EPUB';
-      // Update all book title UI elements
-      document.querySelectorAll('.book-title').forEach(el => { el.textContent = bookTitle; });
-      // Ensure sidebar title is always visible and never overlaps
-      const sidebarTitle = document.getElementById('sidebarBookTitle');
-      if (sidebarTitle) {
-        sidebarTitle.textContent = bookTitle;
-        sidebarTitle.style.position = 'relative';
-        sidebarTitle.style.left = '0';
-        sidebarTitle.style.top = '0';
-        sidebarTitle.style.zIndex = '1';
-        sidebarTitle.style.whiteSpace = 'nowrap';
-        sidebarTitle.style.overflow = 'hidden';
-        sidebarTitle.style.textOverflow = 'ellipsis';
-        sidebarTitle.style.maxWidth = '180px';
-      }
-      // Media controls title
-      const mediaTitle = document.getElementById('mediaBookTitle');
-      if (mediaTitle) {
-        mediaTitle.textContent = bookTitle;
-        mediaTitle.style.whiteSpace = 'nowrap';
-        mediaTitle.style.overflow = 'hidden';
-        mediaTitle.style.textOverflow = 'ellipsis';
-        mediaTitle.style.maxWidth = '140px';
-      }
-      // Render chapter list in sidebar
-      chapterList.innerHTML = '';
-      chapters.forEach((ch, idx) => {
-        const li = document.createElement('li');
-        li.textContent = ch.title;
-        li.dataset.fileName = ch.file_name;
-        li.className = 'chapter-list-item';
-        li.style.cursor = 'pointer';
-        li.style.padding = '0.5em 0.75em';
-        li.style.borderRadius = '4px';
-        li.style.transition = 'background 0.2s';
-        li.onclick = function() {
-          loadAndDisplayChapter(ch.file_name);
-          setTimeout(() => {
-            if (epubContent) epubContent.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }, 200);
-        };
-        chapterList.appendChild(li);
-      });
-      // Load and display the first chapter automatically and scroll to it
-      if (chapters.length > 0) {
-        await loadAndDisplayChapter(chapters[0].file_name);
-        setTimeout(() => {
-          if (epubContent) epubContent.scrollIntoView({ behavior: 'auto', block: 'start' });
-        }, 200);
-      }
-    });
-
-    async function loadAndDisplayChapter(fileName) {
-      if (!uploadId || !fileName) return;
-      if (fileName === currentChapterFile) return; // Avoid reloading same chapter
-      currentChapterFile = fileName;
-      statusDiv.textContent = 'Loading chapter...';
-      try {
-        const res = await fetch('/chapter', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ upload_id: uploadId, file_name: fileName })
-        });
-        if (!res.ok) {
-          statusDiv.textContent = `Error: ${await res.text()}`;
-          return;
-        }
-        const data = await res.json();
-        const chunks = data.chunks || [];
-        renderChapterContent(chunks);
-        statusDiv.textContent = '';
-        epubContent.scrollTop = 0;
-        setTimeout(() => {
-          epubContent.scrollIntoView({ behavior: 'auto', block: 'start' });
-          window.scrollTo({ top: 0, behavior: 'auto' });
-        }, 200);
-      } catch (err) {
-        statusDiv.textContent = 'Error loading chapter.';
-      }
-    }
-
-    // Remove event delegation for chapterList (now handled inline)
-    // Word-level highlighting (best effort)
-    let wordTimer = null;
-    function playChunk(i) {
-      // Remove previous highlights from reading area
-      if (epubContent) {
-        epubContent.querySelectorAll('p, h2').forEach(p => {
-          p.classList.remove('highlight');
-          // Remove word highlight spans if present
-          if (p.dataset.wordsplit === '1') {
-            p.innerHTML = p.textContent;
-            p.dataset.wordsplit = '';
-          }
-        });
-      }
-      const el = epubContent ? epubContent.querySelector(`[data-index="${i}"]`) : null;
-      if (el) {
-        el.classList.add('highlight');
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        // Word-level highlight for <p> only
-        if (el.tagName === 'P') {
-          const words = el.textContent.split(/(\s+)/);
-          el.innerHTML = words.map((w, idx) => `<span class="word" data-word-idx="${idx}">${w}</span>`).join('');
-          el.dataset.wordsplit = '1';
-        }
-      }
-      // Clear previous word timer
-      if (wordTimer) clearInterval(wordTimer);
-      fetchChunk(i).then(url => {
-        mainAudio.src = url;
-        mainAudio.play();
-        // Word-level highlight: best effort (split duration by word count)
-        if (el && el.tagName === 'P') {
-          mainAudio.onloadedmetadata = () => {
-            const duration = mainAudio.duration || 1;
-            const wordSpans = el.querySelectorAll('.word');
-            let idx = 0;
-            function highlightWord() {
-              wordSpans.forEach((w, j) => w.style.background = j === idx ? 'rgba(76,139,245,0.3)' : '');
-            }
-            highlightWord();
-            if (wordTimer) clearInterval(wordTimer);
-            wordTimer = setInterval(() => {
-              idx++;
-              if (idx >= wordSpans.length) {
-                clearInterval(wordTimer);
-                return;
-              }
-              highlightWord();
-            }, (duration * 1000) / wordSpans.length);
-            mainAudio.onpause = mainAudio.onended = () => { if (wordTimer) clearInterval(wordTimer); };
-          };
-        }
-      });
-    }
-
-    // Automatically play next chunk when audio ends
-    mainAudio.onended = () => {
-      if (playingSeq && currentIdx + 1 < chunks.length) {
-        currentIdx++;
-        playChunk(currentIdx);
-      } else {
-        playingSeq = false;
-      }
+      overlay.querySelector('#settingsPanelCloseBtnDynamic').onclick = closePanel;
+      overlay.onclick = (e) => { if (e.target === overlay) closePanel(); };
+      function keydownHandler(e) { if (e.key === "Escape") closePanel(); }
+      document.addEventListener("keydown", keydownHandler);
+      setTimeout(()=>{ var modal = overlay.querySelector('#settingsPanelModalDynamic'); if (modal) modal.focus(); }, 25);
     };
-    mainAudio.onloadedmetadata = () => {
-      const d = Math.floor(mainAudio.duration);
-      totTime.textContent = `${Math.floor(d/60)}:${String(d%60).padStart(2,'0')}`;
-      // prog.max = mainAudio.duration || 100; // This line is no longer needed
-    };
-    mainAudio.ontimeupdate = () => {
-      const t = Math.floor(mainAudio.currentTime);
-      curTime.textContent = `${Math.floor(t/60)}:${String(t%60).padStart(2,'0')}`;
-      const percent = mainAudio.duration ? (mainAudio.currentTime / mainAudio.duration) * 100 : 0;
-      progressFill.style.width = percent + '%';
-      progressHandle.style.left = percent + '%';
-    };
-    progressBar.onclick = function(e) {
-      const rect = progressBar.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const percent = Math.max(0, Math.min(1, x / rect.width));
-      mainAudio.currentTime = percent * mainAudio.duration;
-    };
-    // Play/Pause Toggle Button Emojis
-    function setPlayPauseIcon(isPlaying) {
-      document.getElementById('iconPlay').style.display = isPlaying ? "none" : "";
-      document.getElementById('iconPause').style.display = isPlaying ? "" : "none";
-    }
-    mainAudio.onplay = () => setPlayPauseIcon(true);
-    mainAudio.onpause = () => setPlayPauseIcon(false);
-    playBtn.onclick = () => {
-      if (mainAudio.paused) {
-        mainAudio.play();
-      } else {
-        mainAudio.pause();
-      }
-    };
-    rewindBtn.onclick = () => {
-      mainAudio.currentTime = Math.max(0, mainAudio.currentTime - 15);
-    };
-    forwardBtn.onclick = () => {
-      mainAudio.currentTime = Math.min(mainAudio.duration, mainAudio.currentTime + 15);
-    };
-    speedBtn.addEventListener('click', () => {
-      const rates = [1, 1.25, 1.5, 1.75, 2];
-      let current = rates.indexOf(mainAudio.playbackRate);
-      current = (current + 1) % rates.length;
-      mainAudio.playbackRate = rates[current];
-      speedBtn.textContent = rates[current] + 'x';
-    });
-    mainAudio.playbackRate = 1;
-    speedBtn.textContent = '1x';
-    // Keyboard accessibility for audio bar
-    playBtn.onkeydown = rewindBtn.onkeydown = forwardBtn.onkeydown = function(e) {
-      if (e.key === " " || e.key === "Enter") { e.preventDefault(); this.click(); }
-    };
-    document.addEventListener('keydown', function(e) {
-      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT") return;
-      if (e.key === " ") {
-        e.preventDefault(); playBtn.click();
-      }
-      if (e.key === "ArrowLeft") rewindBtn.click();
-      if (e.key === "ArrowRight") forwardBtn.click();
-    });
-
-    // SEARCH LOGIC (fixed for #epubContent)
-    let searchMatches = [];
-    let currentMatchIdx = -1;
-    const searchInput = document.getElementById('searchInput');
-    const searchPrevBtn = document.getElementById('searchPrevBtn');
-    const searchNextBtn = document.getElementById('searchNextBtn');
-    const searchCount = document.getElementById('searchCount');
-    function clearSearchHighlights() {
-      // Remove word-level highlight spans first
-      document.querySelectorAll('#epubContent .word').forEach(el => {
-        const parent = el.parentNode;
-        parent.replaceChild(document.createTextNode(el.textContent), el);
-        parent.normalize();
-      });
-      // Remove search highlight spans
-      document.querySelectorAll('#epubContent .search-highlight').forEach(el => {
-        const parent = el.parentNode;
-        parent.replaceChild(document.createTextNode(el.textContent), el);
-        parent.normalize();
-      });
-      searchMatches = [];
-      currentMatchIdx = -1;
-      searchCount.textContent = '';
-    }
-    function highlightSearch(term) {
-      clearSearchHighlights();
-      if (!term || term.length < 2) return;
-      const regex = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
-      const walker = document.createTreeWalker(document.getElementById('epubContent'), NodeFilter.SHOW_TEXT, null);
-      let node;
-      let found = false;
-      while ((node = walker.nextNode())) {
-        if (node.parentNode && node.parentNode.closest('.search-highlight')) continue;
-        let match;
-        let lastIndex = 0;
-        const text = node.textContent;
-        let newNodes = [];
-        while ((match = regex.exec(text))) {
-          if (match.index > lastIndex) {
-            newNodes.push(document.createTextNode(text.slice(lastIndex, match.index)));
-          }
-          const span = document.createElement('span');
-          span.className = 'search-highlight';
-          span.textContent = match[0];
-          span.style.background = 'rgba(255, 230, 0, 0.5)';
-          span.style.color = '#222';
-          newNodes.push(span);
-          searchMatches.push(span);
-          lastIndex = match.index + match[0].length;
-          found = true;
-        }
-        if (lastIndex < text.length) {
-          newNodes.push(document.createTextNode(text.slice(lastIndex)));
-        }
-        if (newNodes.length) {
-          newNodes.forEach(n => node.parentNode.insertBefore(n, node));
-          node.parentNode.removeChild(node);
-        }
-      }
-      if (searchMatches.length) {
-        currentMatchIdx = 0;
-        updateSearchHighlight();
-      }
-      searchCount.textContent = searchMatches.length ? `${currentMatchIdx+1}/${searchMatches.length}` : '0/0';
-      if (!found) {
-        searchCount.textContent = 'No matches';
-      }
-    }
-    function updateSearchHighlight() {
-      searchMatches.forEach((el, i) => {
-        el.style.outline = i === currentMatchIdx ? '2px solid #2563eb' : '';
-        el.scrollIntoView({behavior:'smooth', block:'center'});
-      });
-      searchCount.textContent = searchMatches.length ? `${currentMatchIdx+1}/${searchMatches.length}` : '0/0';
-    }
-    searchInput.addEventListener('input', e => {
-      highlightSearch(e.target.value);
-    });
-    searchPrevBtn.addEventListener('click', () => {
-      if (!searchMatches.length) return;
-      currentMatchIdx = (currentMatchIdx - 1 + searchMatches.length) % searchMatches.length;
-      updateSearchHighlight();
-    });
-    searchNextBtn.addEventListener('click', () => {
-      if (!searchMatches.length) return;
-      currentMatchIdx = (currentMatchIdx + 1) % searchMatches.length;
-      updateSearchHighlight();
-    });
-    // Helper: scroll an element into a container (not the whole page)
-    function scrollElementIntoContainer(element, container) {
-      if (!element || !container) return;
-      const elRect = element.getBoundingClientRect();
-      const contRect = container.getBoundingClientRect();
-      if (elRect.top < contRect.top) {
-        container.scrollTop -= (contRect.top - elRect.top) + 16;
-      } else if (elRect.bottom > contRect.bottom) {
-        container.scrollTop += (elRect.bottom - contRect.bottom) + 16;
-      }
-    }
-    // Persistent settings helpers
-    function saveSetting(key, value) {
-      try { localStorage.setItem(key, value); } catch (e) {}
-    }
-    function loadSetting(key, fallback) {
-      try { return localStorage.getItem(key) || fallback; } catch (e) { return fallback; }
-    }
-    // Restore persistent settings on load
-    document.addEventListener('DOMContentLoaded', () => {
-      // Theme
-      const savedTheme = loadSetting('epubTheme', 'normal');
-      applyTheme(savedTheme);
-      // Font size
-      const savedFontSize = loadSetting('epubFontSize', '1.18');
-      if (epubContent) epubContent.style.fontSize = savedFontSize + 'em';
-      // Voice
-      const savedVoice = loadSetting('epubVoice', '');
-      if (savedVoice && voiceSelect) voiceSelect.value = savedVoice;
-    });
-    // Theme application logic
-    function applyTheme(theme) {
-      const themes = {
-        normal:  { bg:'#000', color:'#ececec', font:'serif', fontWeight:'normal' },
-        soft:    { bg:'#181818', color:'#e5d6c2', font:'serif', fontWeight:'normal' },
-        bold:    { bg:'#000', color:'#fff', font:'serif', fontWeight:'bold' },
-        gray:    { bg:'#181818', color:'#bdbdbd', font:'serif', fontWeight:'normal' },
-        quiet:   { bg:'#000', color:'#e5e7eb', font:'serif', fontWeight:'normal' },
-        sepia:   { bg:'#19140d', color:'#e5d6c2', font:'serif', fontWeight:'normal' },
-      };
-      const t = themes[theme] || themes.normal;
-      if (epubContent) {
-        epubContent.style.background = t.bg;
-        epubContent.style.color = t.color;
-        epubContent.style.fontFamily = t.font === 'serif' ? 'Georgia, Times New Roman, serif' : 'Inter, Arial, sans-serif';
-        epubContent.style.fontWeight = t.fontWeight;
-      }
-      document.body.style.background = t.bg;
-      document.body.style.color = t.color;
-      saveSetting('epubTheme', theme);
-    }
-    // Save font size and voice on change
-    if (voiceSelect) {
-      voiceSelect.addEventListener('change', function() {
-        saveSetting('epubVoice', voiceSelect.value);
-      });
-    }
-    // Error/status feedback for uploads
-    form.addEventListener('submit', () => {
-      statusDiv.classList.remove('status-error', 'status-success', 'status-info');
-      statusDiv.classList.add('status-info');
-    });
-    // Add ARIA live region for audio errors
-    mainAudio.onerror = () => {
-      statusDiv.textContent = 'Audio playback error.';
-      statusDiv.classList.remove('status-success', 'status-info');
-      statusDiv.classList.add('status-error');
-    };
-    // Add keyboard accessibility for sidebar chapter navigation
-    chapterList.querySelectorAll('li').forEach(li => {
-      li.tabIndex = 0;
-      li.setAttribute('role', 'option');
-      li.onkeydown = function(e) {
-        if (e.key === 'Enter' || e.key === ' ') {
-          li.click();
-        }
-      };
-    });
-  </script>
-</body>
-</html>
