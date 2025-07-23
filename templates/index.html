@@ -6,19 +6,76 @@
   <title>EPUB Audio Reader</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"/>
   <style>
+    /* layout: sidebar + main */
     body {
       font-family: 'Inter', sans-serif;
       background: #121212;
       color: #eee;
       margin: 0;
-      padding: 2rem;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+    /* SIDEBAR */
+    #sidebar {
+      width: 250px;
+      background: #1f1f1f;
+      padding: 1rem;
+      transform: translateX(-250px);
+      transition: transform 0.3s ease;
+      overflow-y: auto;
+      box-shadow: 2px 0 6px rgba(0,0,0,0.5);
+      z-index: 100;
+    }
+    #sidebar.open {
+      transform: translateX(0);
+    }
+    #sidebar h2 {
+      margin-top: 0;
+      margin-bottom: 1rem;
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+    #chapterList {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    #chapterList li {
+      padding: 0.5rem 0.75rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    #chapterList li:hover {
+      background: rgba(76,139,245,0.2);
+    }
+    #toggle-btn {
+      position: absolute;
+      top: 1rem;
+      right: -2.5rem;
+      width: 2rem;
+      height: 2rem;
+      border: none;
+      border-radius: 50%;
+      background: #4c8bf5;
+      color: #fff;
+      font-size: 1.2rem;
+      cursor: pointer;
+      box-shadow: 1px 1px 4px rgba(0,0,0,0.5);
+    }
+
+    /* MAIN CONTENT */
+    #main {
+      flex: 1;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
+      padding: 2rem;
+      overflow-y: auto;
     }
     h1 {
       font-weight: 700;
+      margin-top: 0;
       margin-bottom: 1rem;
     }
     form {
@@ -83,6 +140,8 @@
       border-left: 4px solid #4c8bf5;
       padding-left: 0.5em;
     }
+
+    /* ELEVEN-LABS PLAYER */
     .eleven-player {
       display: none;
       align-items: center;
@@ -97,29 +156,37 @@
     }
     .eleven-player .play-btn {
       width:36px; height:36px;
-      background:#292929;
-      border:none;
-      border-radius:50%;
-      display:grid;
-      place-items:center;
-      cursor:pointer;
+      background:#292929; border:none; border-radius:50%;
+      display:grid; place-items:center; cursor:pointer;
       transition:background 0.2s;
     }
     .eleven-player .play-btn:hover { background:#3a3a3a; }
     .eleven-player .play-btn svg { width:20px; height:20px; fill:#fff; }
     .eleven-player .progress-group {
-      flex:1; display:flex; align-items:center; gap:0.5rem;
+      flex: 1; display: flex; align-items: center; gap: 0.5rem;
     }
     .eleven-player .time {
-      width:2.5rem; text-align:center; font-size:0.85rem; color:#aaa;
+      width: 2.5rem; text-align: center;
+      font-size: 0.85rem; color: #aaa;
     }
     .eleven-player .progress {
-      flex:1; height:4px; background:#333; border-radius:2px;
-      -webkit-appearance:none; cursor:pointer;
+      -webkit-appearance: none; appearance: none;
+      flex: 1; height: 4px; background: #333;
+      border-radius: 2px; cursor: pointer;
+    }
+    .eleven-player .progress::-webkit-slider-runnable-track {
+      height: 4px; background: #333; border-radius: 2px;
     }
     .eleven-player .progress::-webkit-slider-thumb {
-      -webkit-appearance:none; width:12px; height:12px;
+      -webkit-appearance: none; width:12px; height:12px;
       background:#4c8bf5; border-radius:50%; margin-top:-4px;
+    }
+    .eleven-player .progress::-moz-range-track {
+      height: 4px; background: #333; border-radius: 2px;
+    }
+    .eleven-player .progress::-moz-range-thumb {
+      width:12px; height:12px; background:#4c8bf5;
+      border-radius:50%; cursor:pointer;
     }
     .eleven-player .speed-btn {
       background:none; border:none; color:#fff;
@@ -132,70 +199,65 @@
     }
     .eleven-player .voice-label {
       font-size:0.85rem; color:#ccc;
-      background:#292929; padding:0.25rem 0.5rem; border-radius:4px;
+      background:#292929; padding:0.25rem 0.5rem;
+      border-radius:4px;
     }
   </style>
 </head>
 <body>
-  <h1>EPUB Audio Reader</h1>
 
-  <form id="uploadForm" enctype="multipart/form-data">
-    <input type="file" name="file" accept=".epub" required/>
-    <select id="voiceSelect" name="voice">
-      <option value="">Select Voice (default: Jenny)</option>
-    </select>
-    <button type="submit">Upload EPUB</button>
-  </form>
+  <div id="sidebar">
+    <button id="toggle-btn">☰</button>
+    <h2>Chapters</h2>
+    <ul id="chapterList"></ul>
+  </div>
 
-  <div id="status"></div>
-  <div id="textDisplay"></div>
+  <div id="main">
+    <h1>EPUB Audio Reader</h1>
 
-  <div class="eleven-player">
-    <button class="play-btn" aria-label="Play/Pause">
-      <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-    </button>
-    <div class="progress-group">
-      <span class="time current">0:00</span>
-      <input type="range" class="progress" min="0" max="100" value="0"/>
-      <span class="time total">0:00</span>
+    <form id="uploadForm" enctype="multipart/form-data">
+      <input type="file" name="file" accept=".epub" required/>
+      <select id="voiceSelect" name="voice">
+        <option value="">Select Voice (default: Jenny)</option>
+      </select>
+      <button type="submit">Upload EPUB</button>
+    </form>
+
+    <div id="status"></div>
+    <div id="textDisplay"></div>
+
+    <div class="eleven-player">
+      <button class="play-btn" aria-label="Play/Pause">
+        <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+      <div class="progress-group">
+        <span class="time current">0:00</span>
+        <input type="range" class="progress" min="0" max="100" value="0"/>
+        <span class="time total">0:00</span>
+      </div>
+      <button class="speed-btn">1×</button>
+      <div class="voice-label">Jenny</div>
     </div>
-    <button class="speed-btn">1×</button>
-    <div class="voice-label">Jenny</div>
   </div>
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      console.log('🚀 DOM loaded, initializing script…');
-
-      // populate voice dropdown
-      const voices = [
-        "en-AU-NatashaNeural","en-AU-WilliamNeural",
-        "en-CA-ClaraNeural","en-CA-LiamNeural",
-        "en-GB-LibbyNeural","en-GB-RyanNeural","en-GB-SoniaNeural",
-        "en-IN-NeerjaNeural","en-IN-PriyaNeural",
-        "en-US-AriaNeural","en-US-GuyNeural","en-US-JennyNeural",
-        "en-US-MichelleNeural","en-US-TonyNeural"
-      ];
+      const sidebar     = document.getElementById('sidebar');
+      const toggleBtn   = document.getElementById('toggle-btn');
+      const chapterList = document.getElementById('chapterList');
       const voiceSelect = document.getElementById('voiceSelect');
-      voices.forEach(v => {
-        const o = document.createElement('option');
-        o.value = v; o.textContent = v;
-        voiceSelect.appendChild(o);
-      });
+      const form        = document.getElementById('uploadForm');
+      const statusDiv   = document.getElementById('status');
+      const textDiv     = document.getElementById('textDisplay');
+      const player      = document.querySelector('.eleven-player');
+      const playBtn     = player.querySelector('.play-btn');
+      const prog        = player.querySelector('.progress');
+      const curTime     = player.querySelector('.current');
+      const totTime     = player.querySelector('.total');
+      const speedBtn    = player.querySelector('.speed-btn');
+      const voiceLabel  = player.querySelector('.voice-label');
 
-      // grab elements
-      const form       = document.getElementById('uploadForm');
-      const statusDiv  = document.getElementById('status');
-      const textDiv    = document.getElementById('textDisplay');
-      const player     = document.querySelector('.eleven-player');
-      const playBtn    = player.querySelector('.play-btn');
-      const prog       = player.querySelector('.progress');
-      const curTime    = player.querySelector('.current');
-      const totTime    = player.querySelector('.total');
-      const speedBtn   = player.querySelector('.speed-btn');
-      const voiceLabel = player.querySelector('.voice-label');
-
-      console.log('Form:', form, 'Status:', statusDiv, 'TextDiv:', textDiv);
+      toggleBtn.onclick = () => sidebar.classList.toggle('open');
 
       let uploadId, chunks = [], cache = {}, currentIdx = 0, playingSeq = false;
       const audio = new Audio();
@@ -203,43 +265,46 @@
 
       form.addEventListener('submit', async e => {
         e.preventDefault();
-        console.log('📤 Submit clicked');
         statusDiv.textContent = 'Extracting text…';
         textDiv.innerHTML = '';
+        chapterList.innerHTML = '';
         player.style.display = 'none';
         cache = {};
 
         const fd = new FormData(form);
-        console.log('FormData keys:', [...fd.keys()]);
-
-        let res;
-        try {
-          res = await fetch('/upload', { method:'POST', body: fd });
-        } catch (err) {
-          console.error('✋ Fetch failed', err);
-          statusDiv.textContent = 'Network error';
-          return;
-        }
-
+        const res = await fetch('/upload', { method:'POST', body: fd });
         if (!res.ok) {
-          const msg = await res.text();
-          console.warn('⚠️ Upload error:', msg);
-          statusDiv.textContent = `Error: ${msg}`;
+          statusDiv.textContent = `Error: ${await res.text()}`;
           return;
         }
-
         const data = await res.json();
-        console.log('✅ /upload response:', data);
         uploadId = data.upload_id;
         chunks   = data.text_chunks;
-        statusDiv.textContent = 'Click any paragraph to start reading.';
 
+        // populate chapters
+        const chapters = data.chapters || [];
+        chapters.forEach((ch, idx) => {
+          const li = document.createElement('li');
+          li.textContent   = ch;
+          li.dataset.index = Math.floor(idx * chunks.length / chapters.length);
+          chapterList.appendChild(li);
+        });
+
+        statusDiv.textContent = 'Click a chapter or paragraph to play.';
         chunks.forEach((c, i) => {
           const p = document.createElement('p');
-          p.textContent = c;
+          p.textContent   = c;
           p.dataset.index = i;
           textDiv.appendChild(p);
         });
+      });
+
+      chapterList.addEventListener('click', e => {
+        if (e.target.tagName !== 'LI') return;
+        const idx = Number(e.target.dataset.index);
+        const p = textDiv.querySelector(`p[data-index="${idx}"]`);
+        if (p) p.scrollIntoView({ behavior:'smooth', block:'center' });
+        startSequence(idx);
       });
 
       textDiv.addEventListener('click', e => {
