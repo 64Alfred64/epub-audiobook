@@ -12,9 +12,9 @@
       background: #121212;
       color: #eee;
       margin: 0;
-      min-height: 100vh;
       width: 100vw;
-      overflow-x: hidden;
+      height: 100vh;
+      overflow: hidden;
     }
     #sidebar {
       width: 250px;
@@ -231,10 +231,10 @@
   </style>
 </head>
 <body>
-  <div class="app-container">
+  <div class="app-container h-screen w-screen grid grid-cols-[auto_1fr] grid-rows-[1fr_auto]">
     <button class="hamburger block md:hidden fixed top-4 left-4 z-[1100] bg-[#222] text-white p-2 rounded focus:outline-none" aria-label="Open sidebar" id="hamburgerBtn">☰</button>
     <div class="sidebar-overlay fixed inset-0 bg-black/60 z-[1099] hidden" id="sidebarOverlay"></div>
-    <div class="sidebar fixed md:static top-0 left-0 h-full w-[280px] bg-black border-r border-[#333] overflow-y-auto p-5 z-[1101] transition-transform duration-300 -translate-x-full md:translate-x-0" id="sidebar">
+    <div class="sidebar row-span-2 h-full w-[280px] bg-black border-r border-[#333] overflow-y-auto p-5 z-[1101] transition-transform duration-300 -translate-x-full md:translate-x-0 fixed md:static top-0 left-0" id="sidebar">
       <div class="sidebar-header flex items-center gap-2 mb-4">
         <button class="back-button control-btn">&lt;</button>
         <h2 class="book-title flex-1 text-lg font-bold text-white">Book Title</h2>
@@ -245,7 +245,7 @@
         <ul class="chapter-nav" id="chapterList"></ul>
       </div>
     </div>
-    <div class="main-content min-h-screen bg-black text-white pl-0 md:pl-[280px] pr-0 md:pr-0 pt-8 pb-0 transition-all duration-300" id="mainContent">
+    <div class="main-content col-start-2 row-start-1 bg-black text-white pt-8 pb-0 pr-0 pl-0 flex flex-col h-full overflow-y-auto transition-all duration-300" id="mainContent">
       <form id="uploadForm" enctype="multipart/form-data" class="mb-6 flex flex-col gap-2 z-[1200] relative bg-[#111] p-4 rounded shadow-lg">
         <input type="file" name="file" accept=".epub" required class="mb-2 block"/>
         <select id="voiceSelect" name="voice" class="mb-2 block">
@@ -254,9 +254,9 @@
         <button type="submit" class="control-btn bg-blue-700 text-white px-4 py-2 rounded block">Upload EPUB</button>
       </form>
       <div id="status" class="mb-2"></div>
-      <div class="text-display" id="textDisplay"></div>
+      <div id="textDisplay"></div>
     </div>
-    <div class="media-controls fixed bottom-0 left-0 right-0 w-full bg-black border-t border-[#333] p-4 z-[1000] flex flex-col gap-2" id="mediaControls">
+    <div class="media-controls col-span-2 row-start-2 w-full bg-black border-t border-[#333] p-4 z-[1000] flex flex-col gap-2" id="mediaControls" style="position:sticky; bottom:0; left:0; right:0;">
       <div class="progress-container flex items-center gap-3 mb-2">
         <span class="time-current text-xs text-gray-400" id="audioTimeCurrent">00:00</span>
         <div class="progress-bar flex-1 h-1 bg-[#333] rounded relative cursor-pointer mx-2" id="customProgressBar">
