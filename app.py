@@ -37,14 +37,12 @@ def chunk_text(text, max_chars=500):
         chunks.append(current)
     return chunks
 
-def extract_epub_chapters(path):
+def extract_epub_metadata_and_chapters(path):
     book = epub.read_epub(path)
     title_meta = book.get_metadata('DC', 'title')
     title = title_meta[0][0] if title_meta else "Untitled EPUB"
-
     # Extract cover image (if present)
     cover_image = None
-    # Try EPUB3 cover extraction
     cover_id = None
     for k, v in book.metadata.items():
         if k[1].lower() == 'cover':
@@ -57,7 +55,6 @@ def extract_epub_chapters(path):
             mime = cover_item.media_type or 'image/jpeg'
             b64 = base64.b64encode(cover_item.get_content()).decode('utf-8')
             cover_image = f"data:{mime};base64,{b64}"
-    # Fallback: look for first image named 'cover' or similar
     if not cover_image:
         for item in book.get_items_of_type(ITEM_IMAGE):
             if 'cover' in item.file_name.lower():
@@ -66,131 +63,72 @@ def extract_epub_chapters(path):
                 b64 = base64.b64encode(item.get_content()).decode('utf-8')
                 cover_image = f"data:{mime};base64,{b64}"
                 break
-
-    # Build a map of id -> document for quick lookup
-    doc_map = {item.get_id(): item for item in book.get_items_of_type(ITEM_DOCUMENT)}
+    doc_map = {item.file_name: item for item in book.get_items_of_type(ITEM_DOCUMENT)}
     img_map = {item.file_name: item for item in book.get_items_of_type(ITEM_IMAGE)}
     chapters = []
-    chapter_texts = []
-
-    # EPUB TOC parsing: get chapter names and hrefs
     toc = book.toc
     def flatten_toc(toc_items):
         for item in toc_items:
             if isinstance(item, epub.Link):
                 yield item
             elif isinstance(item, tuple) and hasattr(item[0], 'title'):
-                # Nested section (e.g., parts with chapters)
                 yield item[0]
                 yield from flatten_toc(item[1])
             elif hasattr(item, 'title'):
                 yield item
-
     chapter_refs = []
     for entry in flatten_toc(toc):
         if hasattr(entry, 'href'):
             chapter_refs.append((entry.title, entry.href.split('#')[0]))
-
     seen = set()
     for chap_title, chap_href in chapter_refs:
-        # Only process each doc once (some books have repeated hrefs)
         if chap_href in seen:
             continue
         seen.add(chap_href)
-        # Find the document with that href
-        for item in doc_map.values():
-            if item.file_name.endswith(chap_href):
-                try:
-                    soup = BeautifulSoup(item.get_body_content(), 'html.parser')
-                    if not soup:
-                        continue
-                    # Extract text and images in order
-                    content_chunks = []
-                    descendants = soup.body.descendants if soup.body else soup.descendants if soup else []
-                    for elem in descendants:
-                        if elem and hasattr(elem, 'name'):
-                            if elem.name == 'img' and elem.has_attr('src'):
-                                src = elem['src']
-                                # Remove leading path if present
-                                src_clean = src.split('#')[0].split('?')[0]
-                                if src_clean.startswith('./'):
-                                    src_clean = src_clean[2:]
-                                img_item = img_map.get(src_clean) or img_map.get(os.path.basename(src_clean))
-                                if img_item:
-                                    import base64
-                                    mime = img_item.media_type or 'image/jpeg'
-                                    b64 = base64.b64encode(img_item.get_content()).decode('utf-8')
-                                    data_url = f"data:{mime};base64,{b64}"
-                                    content_chunks.append(data_url)
-                            elif elem.name in ['h1','h2','h3','h4','h5','h6']:
-                                text = clean_text(elem.get_text(separator=' ', strip=True))
-                                if text.strip():
-                                    content_chunks.append(text)
-                            elif elem.name == 'p':
-                                text = clean_text(elem.get_text(separator=' ', strip=True))
-                                if text.strip():
-                                    content_chunks.append(text)
-                    if content_chunks:
-                        chapters.append({'title': chap_title, 'file_name': item.file_name})
-                        chapter_texts.append((chap_title, content_chunks))
-                except Exception:
-                    continue
+        for file_name, item in doc_map.items():
+            if file_name.endswith(chap_href):
+                chapters.append({'title': chap_title, 'file_name': file_name})
                 break
+    if not chapters:
+        for file_name, item in doc_map.items():
+            chapters.append({'title': getattr(item, 'get_name', lambda: item.get_id())(), 'file_name': file_name})
+    return title, cover_image, chapters, doc_map, img_map
 
-    # Fallback if TOC fails: use all documents
-    if not chapter_texts:
-        for item in book.get_items_of_type(ITEM_DOCUMENT):
-            try:
-                soup = BeautifulSoup(item.get_body_content(), 'html.parser')
-                if not soup:
-                    continue
-                content_chunks = []
-                descendants = soup.body.descendants if soup.body else soup.descendants if soup else []
-                for elem in descendants:
-                    if elem and hasattr(elem, 'name'):
-                        if elem.name == 'img' and elem.has_attr('src'):
-                            src = elem['src']
-                            src_clean = src.split('#')[0].split('?')[0]
-                            if src_clean.startswith('./'):
-                                src_clean = src_clean[2:]
-                            img_item = img_map.get(src_clean) or img_map.get(os.path.basename(src_clean))
-                            if img_item:
-                                import base64
-                                mime = img_item.media_type or 'image/jpeg'
-                                b64 = base64.b64encode(img_item.get_content()).decode('utf-8')
-                                data_url = f"data:{mime};base64,{b64}"
-                                content_chunks.append(data_url)
-                        elif elem.name in ['h1','h2','h3','h4','h5','h6']:
-                            text = clean_text(elem.get_text(separator=' ', strip=True))
-                            if text.strip():
-                                content_chunks.append(text)
-                        elif elem.name == 'p':
-                            text = clean_text(elem.get_text(separator=' ', strip=True))
-                            if text.strip():
-                                content_chunks.append(text)
-                if content_chunks:
-                    chapters.append({'title': getattr(item, 'get_name', lambda: item.get_id())(), 'file_name': item.file_name})
-                    chapter_texts.append((item.get_id(), content_chunks))
-            except Exception:
-                continue
-
-    # Chunk and map chapter titles to chunk indices
-    all_chunks = []
-    chapter_indices = []
-    for title, content_chunks in chapter_texts:
-        start_idx = len(all_chunks)
-        ch_chunks = []
-        for chunk in content_chunks:
-            # Only chunk text, not images
-            if isinstance(chunk, str) and chunk.startswith('data:image/'):
-                ch_chunks.append(chunk)
-            else:
-                ch_chunks.extend(chunk_text(chunk))
-        if ch_chunks:
-            chapter_indices.append({'title': title, 'index': start_idx})
-            all_chunks.extend(ch_chunks)
-
-    return title, all_chunks, chapter_indices, cover_image
+def extract_epub_chapter_content(doc_map, img_map, file_name):
+    item = doc_map.get(file_name)
+    if not item:
+        return []
+    try:
+        soup = BeautifulSoup(item.get_body_content(), 'html.parser')
+        if not soup:
+            return []
+        content_chunks = []
+        descendants = soup.body.descendants if soup.body else soup.descendants if soup else []
+        for elem in descendants:
+            if elem and hasattr(elem, 'name'):
+                if elem.name == 'img' and elem.has_attr('src'):
+                    src = elem['src']
+                    src_clean = src.split('#')[0].split('?')[0]
+                    if src_clean.startswith('./'):
+                        src_clean = src_clean[2:]
+                    img_item = img_map.get(src_clean) or img_map.get(os.path.basename(src_clean))
+                    if img_item:
+                        import base64
+                        mime = img_item.media_type or 'image/jpeg'
+                        b64 = base64.b64encode(img_item.get_content()).decode('utf-8')
+                        data_url = f"data:{mime};base64,{b64}"
+                        content_chunks.append(data_url)
+                elif elem.name in ['h1','h2','h3','h4','h5','h6']:
+                    text = clean_text(elem.get_text(separator=' ', strip=True))
+                    if text.strip():
+                        content_chunks.append(text)
+                elif elem.name == 'p':
+                    text = clean_text(elem.get_text(separator=' ', strip=True))
+                    if text.strip():
+                        content_chunks.append(text)
+        return content_chunks
+    except Exception:
+        return []
 
 # ← TTS functions stay the same ↓
 
@@ -217,14 +155,26 @@ def upload_epub():
     f.save(epub_path)
 
     try:
-        title, chunks, chapters, cover_image = extract_epub_chapters(epub_path)
+        title, cover_image, chapters, doc_map, img_map = extract_epub_metadata_and_chapters(epub_path)
     except Exception as e:
         traceback.print_exc()
         return jsonify(error="Failed to extract text", details=str(e)), 500
 
-    uploads[uid] = {'chunks': chunks, 'voice': voice}
-    # Now also return chapters = list of {title, index}
-    return jsonify(upload_id=uid, text_chunks=chunks, chapters=chapters, book_title=title, cover_image=cover_image)
+    uploads[uid] = {'doc_map': doc_map, 'img_map': img_map, 'voice': voice}
+    return jsonify(upload_id=uid, chapters=chapters, book_title=title, cover_image=cover_image)
+
+# New endpoint for scalable chapter loading
+@app.route('/chapter', methods=['POST'])
+def get_chapter():
+    data = request.get_json(force=True)
+    uid = data.get('upload_id')
+    file_name = data.get('file_name')
+    if uid not in uploads or not file_name:
+        return jsonify(error="Invalid upload_id or file_name"), 400
+    doc_map = uploads[uid]['doc_map']
+    img_map = uploads[uid]['img_map']
+    chunks = extract_epub_chapter_content(doc_map, img_map, file_name)
+    return jsonify(chunks=chunks)
 
 @app.route('/chunk', methods=['POST'])
 def get_chunk():
