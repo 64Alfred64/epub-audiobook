@@ -729,11 +729,11 @@
       setTimeout(()=>{ var modal = overlay.querySelector('#settingsPanelModalDynamic'); if (modal) modal.focus(); }, 25);
       // --- Settings Panel Interactivity ---
       const preview = overlay.querySelector('#settingsPreview');
-      const textDisplay = document.getElementById('textDisplay');
-      // Helper to apply a style to both preview and textDisplay
+      const reader = document.getElementById('reader');
+      // Helper to apply a style to both preview and reader
       function applyStyle(prop, value) {
         preview.style[prop] = value;
-        textDisplay.style[prop] = value;
+        if (reader) reader.style[prop] = value;
       }
       // Text Size
       overlay.querySelector('#textSizeSlider').oninput = function(e) {
@@ -759,10 +759,12 @@
           preview.style.color = t.color;
           preview.style.fontFamily = t.font === 'serif' ? 'Georgia, Times New Roman, serif' : 'Inter, Arial, sans-serif';
           preview.style.fontWeight = t.fontWeight;
-          textDisplay.style.background = t.bg;
-          textDisplay.style.color = t.color;
-          textDisplay.style.fontFamily = t.font === 'serif' ? 'Georgia, Times New Roman, serif' : 'Inter, Arial, sans-serif';
-          textDisplay.style.fontWeight = t.fontWeight;
+          if (reader) {
+            reader.style.background = t.bg;
+            reader.style.color = t.color;
+            reader.style.fontFamily = t.font === 'serif' ? 'Georgia, Times New Roman, serif' : 'Inter, Arial, sans-serif';
+            reader.style.fontWeight = t.fontWeight;
+          }
         };
       });
       // Further Customization
@@ -807,13 +809,13 @@
     const searchCount = document.getElementById('searchCount');
     function clearSearchHighlights() {
       // Remove word-level highlight spans first
-      document.querySelectorAll('#textDisplay .word').forEach(el => {
+      document.querySelectorAll('#reader .word').forEach(el => {
         const parent = el.parentNode;
         parent.replaceChild(document.createTextNode(el.textContent), el);
         parent.normalize();
       });
       // Remove search highlight spans
-      document.querySelectorAll('#textDisplay .search-highlight').forEach(el => {
+      document.querySelectorAll('#reader .search-highlight').forEach(el => {
         const parent = el.parentNode;
         parent.replaceChild(document.createTextNode(el.textContent), el);
         parent.normalize();
@@ -826,7 +828,7 @@
       clearSearchHighlights();
       if (!term || term.length < 2) return;
       const regex = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
-      const walker = document.createTreeWalker(document.getElementById('textDisplay'), NodeFilter.SHOW_TEXT, null);
+      const walker = document.createTreeWalker(document.getElementById('reader'), NodeFilter.SHOW_TEXT, null);
       let node;
       let found = false;
       while ((node = walker.nextNode())) {
