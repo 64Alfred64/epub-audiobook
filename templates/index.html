@@ -246,12 +246,12 @@
       </div>
     </div>
     <div class="main-content min-h-screen bg-black text-white pl-0 md:pl-[280px] pr-0 md:pr-0 pt-8 pb-0 transition-all duration-300" id="mainContent">
-      <form id="uploadForm" enctype="multipart/form-data" class="mb-6">
-        <input type="file" name="file" accept=".epub" required class="mb-2"/>
-        <select id="voiceSelect" name="voice" class="mb-2">
+      <form id="uploadForm" enctype="multipart/form-data" class="mb-6 flex flex-col gap-2 z-[1200] relative bg-[#111] p-4 rounded shadow-lg">
+        <input type="file" name="file" accept=".epub" required class="mb-2 block"/>
+        <select id="voiceSelect" name="voice" class="mb-2 block">
           <option value="">Select Voice (default: Jenny)</option>
         </select>
-        <button type="submit" class="control-btn bg-blue-700 text-white px-4 py-2 rounded">Upload EPUB</button>
+        <button type="submit" class="control-btn bg-blue-700 text-white px-4 py-2 rounded block">Upload EPUB</button>
       </form>
       <div id="status" class="mb-2"></div>
       <div class="text-display" id="textDisplay"></div>
@@ -474,7 +474,7 @@
     function startSequence(idx) {
       playingSeq = true;
       currentIdx = idx;
-      voiceLabel.textContent = voiceSelect.value || 'Jenny';
+      mediaNarrator.textContent = (voiceSelect.value ? `Read by ${voiceSelect.value}` : 'Read by Jenny');
       playChunk(idx);
     }
     function playChunk(i) {
