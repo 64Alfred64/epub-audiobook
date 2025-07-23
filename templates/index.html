@@ -246,14 +246,17 @@
       </div>
     </div>
     <div class="main-content col-start-2 row-start-1 bg-black text-white pt-8 pb-0 pr-0 pl-0 flex flex-col h-full overflow-y-auto transition-all duration-300" id="mainContent">
-      <form id="uploadForm" enctype="multipart/form-data" class="mb-6 flex flex-col gap-2 z-[1200] relative bg-[#111] p-4 rounded shadow-lg">
-        <input type="file" name="file" accept=".epub" required class="mb-2 block"/>
-        <select id="voiceSelect" name="voice" class="mb-2 block">
-          <option value="">Select Voice (default: Jenny)</option>
-        </select>
-        <button type="submit" class="control-btn bg-blue-700 text-white px-4 py-2 rounded block">Upload EPUB</button>
-      </form>
-      <div id="status" class="mb-2"></div>
+      <div class="flex flex-col gap-2 items-start mb-4">
+        <h1 class="text-2xl font-bold mb-2">EPUB Audio Reader</h1>
+        <form id="uploadForm" enctype="multipart/form-data" class="flex flex-row items-center gap-2 bg-[#181818] p-3 rounded shadow-lg w-full max-w-xl">
+          <input type="file" name="file" accept=".epub" required class="block text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-700 file:text-white hover:file:bg-blue-800"/>
+          <select id="voiceSelect" name="voice" class="block bg-[#222] text-white rounded px-2 py-1">
+            <option value="">Select Voice (default: Jenny)</option>
+          </select>
+          <button type="submit" class="control-btn bg-blue-700 text-white px-4 py-2 rounded">Upload EPUB</button>
+        </form>
+        <div id="status" class="text-sm text-gray-400"></div>
+      </div>
       <div id="textDisplay"></div>
     </div>
     <div class="media-controls col-span-2 row-start-2 w-full bg-black border-t border-[#333] p-4 z-[1000] flex flex-col gap-2" id="mediaControls" style="position:sticky; bottom:0; left:0; right:0;">
