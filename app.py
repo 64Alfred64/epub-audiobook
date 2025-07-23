@@ -34,7 +34,6 @@ def extract_epub_text(path):
     return title, clean_text(full_text)
 
 def chunk_text(text, max_chars=500):
-    # regex‐split into sentences, then pack to ~max_chars
     sentences = re.split(r'(?<=[.?!])\s+', text)
     chunks, current = [], ""
     for s in sentences:
@@ -47,14 +46,17 @@ def chunk_text(text, max_chars=500):
         chunks.append(current)
     return chunks
 
+# ← UPDATED TTS FUNCTIONS ↓
+
 async def synthesize(text, out_path, voice):
+    # Use Communicate.save to write the mp3 directly
     comm = Communicate(text=text, voice=voice)
-    with open(out_path, 'wb') as f:
-        async for chunk in comm.stream():
-            f.write(chunk)
+    await comm.save(out_path)
 
 def run_tts(text, out_path, voice):
     return asyncio.run(synthesize(text, out_path, voice))
+
+# ← end updated TTS
 
 @app.route('/')
 def index():
