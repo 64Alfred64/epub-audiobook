@@ -1,72 +1,43 @@
-from flask import Flask, request, jsonify, send_from_directory
-import os
-from werkzeug.utils import secure_filename
-from ebooklib import epub
-from bs4 import BeautifulSoup
-import uuid
-import subprocess
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>EPUB to Audio</title>
+</head>
+<body>
+  <h1>EPUB to Audio Converter</h1>
+  <form id="uploadForm" enctype="multipart/form-data">
+    <input type="file" name="file" accept=".epub" required />
+    <select name="voice">
+      <option value="en-US-JennyNeural">Jenny (en-US)</option>
+      <option value="en-US-GuyNeural">Guy (en-US)</option>
+    </select>
+    <button type="submit">Convert</button>
+  </form>
 
-app = Flask(__name__)
-UPLOAD_FOLDER = 'uploads'
-AUDIO_FOLDER = 'audio'
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['AUDIO_FOLDER'] = AUDIO_FOLDER
+  <div id="output"></div>
 
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(AUDIO_FOLDER, exist_ok=True)
+  <script>
+    document.getElementById("uploadForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      const form = e.target;
+      const formData = new FormData(form);
 
-@app.route('/')
-def index():
-    return send_from_directory('.', 'index.html')
+      const res = await fetch("/convert", {
+        method: "POST",
+        body: formData,
+      });
 
-@app.route('/convert', methods=['POST'])
-def convert():
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file part named "file" in the request'}), 400
+      const data = await res.json();
+      const output = document.getElementById("output");
 
-    file = request.files['file']
-    voice = request.form.get('voice', 'en-US-JennyNeural')
-
-    if file.filename == '':
-        return jsonify({'error': 'No selected file'}), 400
-
-    filename = secure_filename(file.filename)
-    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    file.save(file_path)
-
-    # Extract text
-    try:
-        book = epub.read_epub(file_path)
-        text = ''
-        for item in book.get_items():
-            if item.get_type() == ebooklib.ITEM_DOCUMENT:
-                soup = BeautifulSoup(item.get_content(), 'html.parser')
-                text += soup.get_text()
-    except Exception as e:
-        return jsonify({'error': f'Failed to parse EPUB: {str(e)}'}), 500
-
-    # Generate audio
-    audio_id = str(uuid.uuid4())
-    audio_path = os.path.join(app.config['AUDIO_FOLDER'], f'{audio_id}.mp3')
-
-    try:
-        subprocess.run([
-            'edge-tts',
-            '--voice', voice,
-            '--text', text[:5000],  # limit length
-            '--write-media', audio_path
-        ], check=True)
-    except Exception as e:
-        return jsonify({'error': f'TTS generation failed: {str(e)}'}), 500
-
-    return jsonify({
-        'text': text[:5000],
-        'audioUrl': f'/audio/{audio_id}.mp3'
-    })
-
-@app.route('/audio/<filename>')
-def serve_audio(filename):
-    return send_from_directory(app.config['AUDIO_FOLDER'], filename)
-
-if __name__ == '__main__':
-    app.run(debug=True)
+      if (res.ok) {
+        output.innerHTML = `<p>Text: ${data.text.slice(0, 500)}...</p><audio controls src="${data.audioUrl}"></audio>`;
+      } else {
+        output.innerHTML = `<p style="color:red;">Error: ${data.error}</p>`;
+      }
+    });
+  </script>
+</body>
+</html>
