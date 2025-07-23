@@ -264,6 +264,49 @@
       box-shadow: 0 2px 12px rgba(0,0,0,0.12);
       background: #111;
     }
+    /* Theme color palettes */
+    :root {
+      --theme-bg-normal: #000;
+      --theme-bg-soft: #181818;
+      --theme-bg-bold: #000;
+      --theme-bg-gray: #181818;
+      --theme-bg-quiet: #000;
+      --theme-bg-sepia: #19140d;
+      --theme-txt-normal: #ececec;
+      --theme-txt-soft: #e5d6c2;
+      --theme-txt-bold: #fff;
+      --theme-txt-gray: #bdbdbd;
+      --theme-txt-quiet: #e5e7eb;
+      --theme-txt-sepia: #e5d6c2;
+    }
+    /* Smooth transitions for highlights, modals, sidebar */
+    .highlight {
+      background: rgba(76,139,245,0.18);
+      border-left: 4px solid #4c8bf5;
+      padding-left: 0.5em;
+      transition: background 0.2s, border 0.2s;
+    }
+    .sidebar, .settings-modal-card, .settings-modal-overlay, .media-controls, #epubContent {
+      transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+    }
+    /* Focus ring for accessibility */
+    .focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
+      outline: 2px solid #2563eb !important;
+      outline-offset: 2px;
+    }
+    /* Custom theme preview swatches */
+    .theme-sample {
+      width: 1.5em;
+      height: 1.5em;
+      border-radius: 4px;
+      border: 1px solid #333;
+      margin-bottom: 0.2em;
+      display: inline-block;
+    }
+    /* Error/status feedback */
+    .status-error { color: #ff4c4c; font-weight: 600; }
+    .status-success { color: #4caf50; font-weight: 600; }
+    .status-info { color: #4c8bf5; font-weight: 600; }
   </style>
 </head>
 <body>
@@ -297,7 +340,7 @@
     </header>
     <!-- Main Reading Area -->
     <main class="main-content col-start-2 row-start-1 bg-black text-white pb-0 pr-0 pl-0 flex flex-col h-full transition-all duration-300" id="mainContent" style="margin-top:72px;background:#000;" aria-label="Reading area">
-      <div id="epubContent" class="epub-content-area" tabindex="0" aria-label="Book text"></div>
+      <div id="epubContent" class="epub-content-area" tabindex="0" aria-label="Book text" style="margin-top:72px;"></div>
       <div id="searchBarContainer" style="width:100%;max-width:900px;margin:0 auto 0.5em auto;display:flex;align-items:center;gap:0.5em;padding:0.5em 0.5em 0 0.5em;position:relative;z-index:2;">
         <span style="display:inline-flex;align-items:center;justify-content:center;width:2em;height:2em;color:#aaa;font-size:1.2em;">
           <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
@@ -459,6 +502,15 @@
           p.dataset.index = i;
           epubContent.appendChild(p);
         }
+      });
+      // Attach click-to-play event after rendering (remove old first)
+      epubContent.querySelectorAll('p, h2').forEach(el => {
+        el.onclick = null;
+        el.addEventListener('click', function(e) {
+          const idx = parseInt(el.dataset.index, 10);
+          if (!isNaN(idx)) startSequence(idx);
+        });
+        el.style.cursor = 'pointer';
       });
     }
 
@@ -684,155 +736,6 @@
       if (e.key === "ArrowRight") forwardBtn.click();
     });
 
-    // Click-to-play audio on EPUB text
-    epubContent.addEventListener('click', function(e) {
-      const el = e.target.closest('p, h2');
-      if (!el || !el.dataset.index) return;
-      const idx = parseInt(el.dataset.index, 10);
-      if (!isNaN(idx)) {
-        startSequence(idx);
-      }
-    });
-
-    // ===== DYNAMIC SETTINGS PANEL MODAL INJECTION =====
-    document.getElementById("audioBarSettingsBtn").onclick = function openSettingsPanel() {
-      // Remove any old modal if present
-      var old = document.getElementById('settingsOverlayDynamic');
-      if (old) old.remove();
-      var overlay = document.createElement('div');
-      overlay.id = 'settingsOverlayDynamic';
-      overlay.className = "settings-modal-overlay settings-modal-overlay-full";
-      overlay.innerHTML = `
-        <div id="settingsPanelModalDynamic" tabindex="0" class="settings-modal-card settings-modal-card-full" role="dialog" aria-modal="true">
-          <button id="settingsPanelCloseBtnDynamic" type="button" class="settings-modal-close" aria-label="Close settings">&times;</button>
-          <header class="settings-modal-header"><h2 class="settings-modal-title">Reading Settings</h2></header>
-          <main class="settings-modal-main">
-            <section id="settingsPreview" class="settings-modal-preview"><div class="mb-1 text-[0.95em] opacity-70 font-medium">Chapter One</div><div>The quick brown fox jumps over the lazy dog. “Reading should be a joy, not a chore,” she thought, as she adjusted her book’s settings.</div></section>
-            <div class="settings-modal-controls">
-              <div>
-                <label for="textSizeSlider" class="settings-modal-label">Text Size</label>
-                <input type="range" id="textSizeSlider" min="0.8" max="2" step="0.01" value="1.1" class="settings-modal-slider" aria-label="Text size"/>
-                <div class="settings-modal-slider-labels">
-                  <span>Very Small</span><span>Very Large</span>
-                </div>
-              </div>
-              <div>
-                <label class="settings-modal-label">Theme</label>
-                <div class="settings-modal-theme-grid">
-                  <button type="button" class="theme-btn" data-theme="normal" aria-label="Normal"><span class="settings-modal-theme-sample" style="background:#fff;"></span>Normal</button>
-                  <button type="button" class="theme-btn" data-theme="soft" aria-label="Soft"><span class="settings-modal-theme-sample" style="background:#f7ecd9;"></span>Soft</button>
-                  <button type="button" class="theme-btn" data-theme="bold" aria-label="Bold"><span class="settings-modal-theme-sample" style="background:#fff;"></span>Bold</button>
-                  <button type="button" class="theme-btn" data-theme="gray" aria-label="Gray"><span class="settings-modal-theme-sample" style="background:#f3f4f6;"></span>Gray</button>
-                  <button type="button" class="theme-btn" data-theme="quiet" aria-label="Quiet"><span class="settings-modal-theme-sample" style="background:#000;"></span>Quiet</button>
-                  <button type="button" class="theme-btn" data-theme="sepia" aria-label="Sepia"><span class="settings-modal-theme-sample" style="background:#f5e6d3;"></span>Sepia</button>
-                </div>
-              </div>
-              <div>
-                <button id="furtherCustomizationBtn" type="button" class="settings-modal-further-btn">Further Customization</button>
-                <div id="furtherCustomizationPanel" class="settings-modal-further-panel hidden">
-                  <div class="settings-modal-row">
-                    <label for="boldTextToggle" class="settings-modal-label">Bold Text</label>
-                    <input type="checkbox" id="boldTextToggle" class="settings-modal-checkbox"/>
-                  </div>
-                  <div>
-                    <label for="lineSpacingSlider" class="settings-modal-label">Line Spacing</label>
-                    <input type="range" id="lineSpacingSlider" min="1" max="2.5" step="0.01" value="1.75" class="settings-modal-slider" aria-label="Line spacing"/>
-                  </div>
-                  <div>
-                    <label for="charSpacingSlider" class="settings-modal-label">Character Spacing</label>
-                    <input type="range" id="charSpacingSlider" min="0" max="0.2" step="0.001" value="0" class="settings-modal-slider" aria-label="Character spacing"/>
-                  </div>
-                  <div>
-                    <label for="wordSpacingSlider" class="settings-modal-label">Word Spacing</label>
-                    <input type="range" id="wordSpacingSlider" min="0" max="1" step="0.01" value="0" class="settings-modal-slider" aria-label="Word spacing"/>
-                  </div>
-                  <div>
-                    <label for="marginSizeSlider" class="settings-modal-label">Margin Size</label>
-                    <input type="range" id="marginSizeSlider" min="0.5" max="4" step="0.01" value="1.5" class="settings-modal-slider" aria-label="Margin size"/>
-                  </div>
-                  <div class="settings-modal-row">
-                    <label for="justifyTextToggle" class="settings-modal-label">Justify Text</label>
-                    <input type="checkbox" id="justifyTextToggle" class="settings-modal-checkbox" checked/>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="settings-modal-footer">Close with ×, Escape, or tap outside.</div>
-          </main>
-        </div>
-      `;
-      document.body.appendChild(overlay);
-      setTimeout(() => overlay.classList.add('open'), 10);
-      function closePanel() {
-        overlay.classList.remove('open');
-        setTimeout(() => { overlay.remove(); }, 250);
-      }
-      overlay.querySelector('#settingsPanelCloseBtnDynamic').onclick = closePanel;
-      overlay.onclick = (e) => { if (e.target === overlay) closePanel(); };
-      function keydownHandler(e) { if (e.key === "Escape") closePanel(); }
-      document.addEventListener("keydown", keydownHandler);
-      setTimeout(()=>{ var modal = overlay.querySelector('#settingsPanelModalDynamic'); if (modal) modal.focus(); }, 25);
-      // --- Settings Panel Interactivity ---
-      const preview = overlay.querySelector('#settingsPreview');
-      function applyStyle(prop, value) {
-        preview.style[prop] = value;
-        if (epubContent) epubContent.style[prop] = value;
-      }
-      overlay.querySelector('#textSizeSlider').oninput = function(e) {
-        applyStyle('fontSize', e.target.value + 'em');
-      };
-      overlay.querySelectorAll('.theme-btn').forEach(btn => {
-        btn.onclick = function() {
-          overlay.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('ring-2','ring-blue-500'));
-          btn.classList.add('ring-2','ring-blue-500');
-          const theme = btn.getAttribute('data-theme');
-          const themes = {
-            normal:  { bg:'#fff', color:'#222', font:'serif', fontWeight:'normal' },
-            soft:    { bg:'#f7ecd9', color:'#5a3a1b', font:'serif', fontWeight:'normal' },
-            bold:    { bg:'#fff', color:'#000', font:'serif', fontWeight:'bold' },
-            gray:    { bg:'#f3f4f6', color:'#6b7280', font:'serif', fontWeight:'normal' },
-            quiet:   { bg:'#000', color:'#e5e7eb', font:'serif', fontWeight:'normal' },
-            sepia:   { bg:'#f5e6d3', color:'#7b5a36', font:'serif', fontWeight:'normal' },
-          };
-          const t = themes[theme];
-          preview.style.background = t.bg;
-          preview.style.color = t.color;
-          preview.style.fontFamily = t.font === 'serif' ? 'Georgia, Times New Roman, serif' : 'Inter, Arial, sans-serif';
-          preview.style.fontWeight = t.fontWeight;
-          if (epubContent) {
-            epubContent.style.background = t.bg;
-            epubContent.style.color = t.color;
-            epubContent.style.fontFamily = t.font === 'serif' ? 'Georgia, Times New Roman, serif' : 'Inter, Arial, sans-serif';
-            epubContent.style.fontWeight = t.fontWeight;
-          }
-        };
-      });
-      const furtherBtn = overlay.querySelector('#furtherCustomizationBtn');
-      const furtherPanel = overlay.querySelector('#furtherCustomizationPanel');
-      furtherBtn.onclick = function() {
-        furtherPanel.classList.toggle('hidden');
-        furtherBtn.classList.toggle('bg-blue-200');
-      };
-      overlay.querySelector('#boldTextToggle').oninput = function(e) {
-        applyStyle('fontWeight', e.target.checked ? 'bold' : '');
-      };
-      overlay.querySelector('#lineSpacingSlider').oninput = function(e) {
-        applyStyle('lineHeight', e.target.value);
-      };
-      overlay.querySelector('#charSpacingSlider').oninput = function(e) {
-        applyStyle('letterSpacing', e.target.value + 'em');
-      };
-      overlay.querySelector('#wordSpacingSlider').oninput = function(e) {
-        applyStyle('wordSpacing', e.target.value + 'em');
-      };
-      overlay.querySelector('#marginSizeSlider').oninput = function(e) {
-        applyStyle('margin', e.target.value + 'em');
-      };
-      overlay.querySelector('#justifyTextToggle').oninput = function(e) {
-        applyStyle('textAlign', e.target.checked ? 'justify' : 'left');
-      };
-    };
-
     // SEARCH LOGIC (fixed for #epubContent)
     let searchMatches = [];
     let currentMatchIdx = -1;
@@ -932,6 +835,73 @@
         container.scrollTop += (elRect.bottom - contRect.bottom) + 16;
       }
     }
+    // Persistent settings helpers
+    function saveSetting(key, value) {
+      try { localStorage.setItem(key, value); } catch (e) {}
+    }
+    function loadSetting(key, fallback) {
+      try { return localStorage.getItem(key) || fallback; } catch (e) { return fallback; }
+    }
+    // Restore persistent settings on load
+    document.addEventListener('DOMContentLoaded', () => {
+      // Theme
+      const savedTheme = loadSetting('epubTheme', 'normal');
+      applyTheme(savedTheme);
+      // Font size
+      const savedFontSize = loadSetting('epubFontSize', '1.18');
+      if (epubContent) epubContent.style.fontSize = savedFontSize + 'em';
+      // Voice
+      const savedVoice = loadSetting('epubVoice', '');
+      if (savedVoice && voiceSelect) voiceSelect.value = savedVoice;
+    });
+    // Theme application logic
+    function applyTheme(theme) {
+      const themes = {
+        normal:  { bg:'#000', color:'#ececec', font:'serif', fontWeight:'normal' },
+        soft:    { bg:'#181818', color:'#e5d6c2', font:'serif', fontWeight:'normal' },
+        bold:    { bg:'#000', color:'#fff', font:'serif', fontWeight:'bold' },
+        gray:    { bg:'#181818', color:'#bdbdbd', font:'serif', fontWeight:'normal' },
+        quiet:   { bg:'#000', color:'#e5e7eb', font:'serif', fontWeight:'normal' },
+        sepia:   { bg:'#19140d', color:'#e5d6c2', font:'serif', fontWeight:'normal' },
+      };
+      const t = themes[theme] || themes.normal;
+      if (epubContent) {
+        epubContent.style.background = t.bg;
+        epubContent.style.color = t.color;
+        epubContent.style.fontFamily = t.font === 'serif' ? 'Georgia, Times New Roman, serif' : 'Inter, Arial, sans-serif';
+        epubContent.style.fontWeight = t.fontWeight;
+      }
+      document.body.style.background = t.bg;
+      document.body.style.color = t.color;
+      saveSetting('epubTheme', theme);
+    }
+    // Save font size and voice on change
+    if (voiceSelect) {
+      voiceSelect.addEventListener('change', function() {
+        saveSetting('epubVoice', voiceSelect.value);
+      });
+    }
+    // Error/status feedback for uploads
+    form.addEventListener('submit', () => {
+      statusDiv.classList.remove('status-error', 'status-success', 'status-info');
+      statusDiv.classList.add('status-info');
+    });
+    // Add ARIA live region for audio errors
+    mainAudio.onerror = () => {
+      statusDiv.textContent = 'Audio playback error.';
+      statusDiv.classList.remove('status-success', 'status-info');
+      statusDiv.classList.add('status-error');
+    };
+    // Add keyboard accessibility for sidebar chapter navigation
+    chapterList.querySelectorAll('li').forEach(li => {
+      li.tabIndex = 0;
+      li.setAttribute('role', 'option');
+      li.onkeydown = function(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          li.click();
+        }
+      };
+    });
   </script>
 </body>
 </html>
