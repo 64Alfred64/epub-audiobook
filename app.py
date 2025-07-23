@@ -75,65 +75,79 @@ def extract_epub_chapters(path):
         # Find the document with that href
         for item in doc_map.values():
             if item.file_name.endswith(chap_href):
-                soup = BeautifulSoup(item.get_body_content(), 'html.parser')
-                # Extract text and images in order
-                content_chunks = []
-                for elem in soup.body.descendants:
-                    if elem.name == 'img' and elem.has_attr('src'):
-                        src = elem['src']
-                        # Remove leading path if present
-                        src_clean = src.split('#')[0].split('?')[0]
-                        if src_clean.startswith('./'):
-                            src_clean = src_clean[2:]
-                        img_item = img_map.get(src_clean) or img_map.get(os.path.basename(src_clean))
-                        if img_item:
-                            import base64
-                            mime = img_item.media_type or 'image/jpeg'
-                            b64 = base64.b64encode(img_item.get_content()).decode('utf-8')
-                            data_url = f"data:{mime};base64,{b64}"
-                            content_chunks.append(data_url)
-                    elif elem.name in ['h1','h2','h3','h4','h5','h6']:
-                        text = clean_text(elem.get_text(separator=' ', strip=True))
-                        if text.strip():
-                            content_chunks.append(text)
-                    elif elem.name == 'p':
-                        text = clean_text(elem.get_text(separator=' ', strip=True))
-                        if text.strip():
-                            content_chunks.append(text)
-                if content_chunks:
-                    chapters.append({'title': chap_title, 'file_name': item.file_name})
-                    chapter_texts.append((chap_title, content_chunks))
+                try:
+                    soup = BeautifulSoup(item.get_body_content(), 'html.parser')
+                    if not soup:
+                        continue
+                    # Extract text and images in order
+                    content_chunks = []
+                    descendants = soup.body.descendants if soup.body else soup.descendants if soup else []
+                    for elem in descendants:
+                        if elem and hasattr(elem, 'name'):
+                            if elem.name == 'img' and elem.has_attr('src'):
+                                src = elem['src']
+                                # Remove leading path if present
+                                src_clean = src.split('#')[0].split('?')[0]
+                                if src_clean.startswith('./'):
+                                    src_clean = src_clean[2:]
+                                img_item = img_map.get(src_clean) or img_map.get(os.path.basename(src_clean))
+                                if img_item:
+                                    import base64
+                                    mime = img_item.media_type or 'image/jpeg'
+                                    b64 = base64.b64encode(img_item.get_content()).decode('utf-8')
+                                    data_url = f"data:{mime};base64,{b64}"
+                                    content_chunks.append(data_url)
+                            elif elem.name in ['h1','h2','h3','h4','h5','h6']:
+                                text = clean_text(elem.get_text(separator=' ', strip=True))
+                                if text.strip():
+                                    content_chunks.append(text)
+                            elif elem.name == 'p':
+                                text = clean_text(elem.get_text(separator=' ', strip=True))
+                                if text.strip():
+                                    content_chunks.append(text)
+                    if content_chunks:
+                        chapters.append({'title': chap_title, 'file_name': item.file_name})
+                        chapter_texts.append((chap_title, content_chunks))
+                except Exception:
+                    continue
                 break
 
     # Fallback if TOC fails: use all documents
     if not chapter_texts:
         for item in book.get_items_of_type(ITEM_DOCUMENT):
-            soup = BeautifulSoup(item.get_body_content(), 'html.parser')
-            content_chunks = []
-            for elem in soup.body.descendants:
-                if elem.name == 'img' and elem.has_attr('src'):
-                    src = elem['src']
-                    src_clean = src.split('#')[0].split('?')[0]
-                    if src_clean.startswith('./'):
-                        src_clean = src_clean[2:]
-                    img_item = img_map.get(src_clean) or img_map.get(os.path.basename(src_clean))
-                    if img_item:
-                        import base64
-                        mime = img_item.media_type or 'image/jpeg'
-                        b64 = base64.b64encode(img_item.get_content()).decode('utf-8')
-                        data_url = f"data:{mime};base64,{b64}"
-                        content_chunks.append(data_url)
-                elif elem.name in ['h1','h2','h3','h4','h5','h6']:
-                    text = clean_text(elem.get_text(separator=' ', strip=True))
-                    if text.strip():
-                        content_chunks.append(text)
-                elif elem.name == 'p':
-                    text = clean_text(elem.get_text(separator=' ', strip=True))
-                    if text.strip():
-                        content_chunks.append(text)
-            if content_chunks:
-                chapters.append({'title': getattr(item, 'get_name', lambda: item.get_id())(), 'file_name': item.file_name})
-                chapter_texts.append((item.get_id(), content_chunks))
+            try:
+                soup = BeautifulSoup(item.get_body_content(), 'html.parser')
+                if not soup:
+                    continue
+                content_chunks = []
+                descendants = soup.body.descendants if soup.body else soup.descendants if soup else []
+                for elem in descendants:
+                    if elem and hasattr(elem, 'name'):
+                        if elem.name == 'img' and elem.has_attr('src'):
+                            src = elem['src']
+                            src_clean = src.split('#')[0].split('?')[0]
+                            if src_clean.startswith('./'):
+                                src_clean = src_clean[2:]
+                            img_item = img_map.get(src_clean) or img_map.get(os.path.basename(src_clean))
+                            if img_item:
+                                import base64
+                                mime = img_item.media_type or 'image/jpeg'
+                                b64 = base64.b64encode(img_item.get_content()).decode('utf-8')
+                                data_url = f"data:{mime};base64,{b64}"
+                                content_chunks.append(data_url)
+                        elif elem.name in ['h1','h2','h3','h4','h5','h6']:
+                            text = clean_text(elem.get_text(separator=' ', strip=True))
+                            if text.strip():
+                                content_chunks.append(text)
+                        elif elem.name == 'p':
+                            text = clean_text(elem.get_text(separator=' ', strip=True))
+                            if text.strip():
+                                content_chunks.append(text)
+                if content_chunks:
+                    chapters.append({'title': getattr(item, 'get_name', lambda: item.get_id())(), 'file_name': item.file_name})
+                    chapter_texts.append((item.get_id(), content_chunks))
+            except Exception:
+                continue
 
     # Chunk and map chapter titles to chunk indices
     all_chunks = []
