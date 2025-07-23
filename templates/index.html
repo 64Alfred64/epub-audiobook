@@ -1,325 +1,407 @@
-<!DOCTYPE html>
-<html lang="en">
-  
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>
-      EPUB Audio Reader
-    </title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap"
-    rel="stylesheet" />
-    <style>
-      /* DARK THEME LAYOUT */ body { font-family: 'Inter', sans-serif; background:
-      #121212; color: #eee; margin: 0; display: flex; height: 100vh; overflow:
-      hidden; } /* SIDEBAR */ #sidebar { width: 250px; background: #1f1f1f; padding:
-      1rem; transform: translateX(-250px); transition: transform 0.3s ease; overflow-y:
-      auto; box-shadow: 2px 0 6px rgba(0,0,0,0.5); z-index: 100; } #sidebar.open
-      { transform: translateX(0); } #sidebar h2 { margin-top: 0; margin-bottom:
-      1rem; font-size: 1.2rem; font-weight: 600; } #chapterList { list-style:
-      none; padding: 0; margin: 0; } #chapterList li { padding: 0.5rem 0.75rem;
-      border-radius: 4px; cursor: pointer; transition: background 0.2s; } #chapterList
-      li:hover { background: rgba(76,139,245,0.2); } #toggle-btn { position:
-      absolute; top: 1rem; right: -2.5rem; width: 2rem; height: 2rem; border:
-      none; border-radius: 50%; background: #4c8bf5; color: #fff; font-size:
-      1.2rem; cursor: pointer; box-shadow: 1px 1px 4px rgba(0,0,0,0.5); } /*
-      MAIN */ #main { flex: 1; display: flex; flex-direction: column; padding:
-      2rem; overflow-y: auto; } h1 { font-weight: 700; margin-top: 0; margin-bottom:
-      1rem; } form { background: #1f1f1f; padding: 1.5rem; border-radius: 12px;
-      max-width: 600px; width: 100%; display: flex; flex-direction: column; gap:
-      1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.5); } input[type="file"], select,
-      button { font-size: 1rem; padding: 0.8rem 1rem; border: none; border-radius:
-      8px; } input[type="file"], select { background: #2a2a2a; color: #eee; cursor:
-      pointer; } button { background: #4c8bf5; color: #fff; font-weight: 600;
-      cursor: pointer; transition: background 0.2s; } button:hover { background:
-      #3a6fe2; } /* EPUB TEXT AREA – Apple Books style */ #textDisplay { margin-top:
-      2rem; max-width: 800px; width: 100%; padding: 1rem; height: 80vh; overflow-y:
-      auto; display: flex; flex-direction: column; gap: 1em; } #textDisplay p
-      { text-align: justify; text-indent: 1em; line-height: 1.6; margin: 0 0
-      1em 0; -webkit-hyphens: auto; hyphens: auto; orphans: 2; widows: 2; cursor:
-      pointer; position: relative; } .highlight { background: rgba(76,139,245,0.2);
-      border-left: 4px solid #4c8bf5; padding-left: 0.5em; } @media (max-width:
-      700px) { #textDisplay { column-width: auto; column-count: 1; } } /* AUDIO
-      PLAYER */ .eleven-player { display: flex; align-items: center; background:
-      #1f1f1f; padding: 0.75rem 1rem; border-radius: 8px; gap: 0.75rem; max-width:
-      600px; width: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.5); margin-top:
-      2rem; } .eleven-player button { background: #292929; border: none; color:
-      #fff; border-radius: 6px; padding: 0.4rem 0.6rem; font-size: 0.85rem; cursor:
-      pointer; transition: background 0.2s; } .eleven-player button:hover { background:
-      #3a3a3a; } .progress-group { flex: 1; display: flex; align-items: center;
-      gap: 0.5rem; } .time { width: 2.5rem; text-align: center; font-size: 0.85rem;
-      color: #aaa; } .progress { flex: 1; height: 4px; background: #333; border-radius:
-      2px; -webkit-appearance: none; cursor: pointer; } .progress::-webkit-slider-thumb
-      { -webkit-appearance: none; width: 12px; height: 12px; background: #4c8bf5;
-      border-radius: 50%; margin-top: -4px; }
-    </style>
-  </head>
-  
-  <body>
-    <div id="sidebar">
-      <button id="toggle-btn">
-        ☰
-      </button>
-      <h2>
-        Chapters
-      </h2>
-      <ul id="chapterList">
-      </ul>
-    </div>
-    <div id="main">
-      <h1>
-        EPUB Audio Reader
-      </h1>
-      <form id="uploadForm" enctype="multipart/form-data">
-        <input type="file" name="file" accept=".epub" required/>
-        <select id="voiceSelect" name="voice">
-          <option value="">
-            Select Voice (default: Jenny)
-          </option>
-        </select>
-        <button type="submit">
-          Upload EPUB
-        </button>
-      </form>
-      <div id="status">
-      </div>
-      <div id="textDisplay">
-      </div>
-      <div class="eleven-player">
-        <button id="rewindBtn">
-          ⏪ 15s
-        </button>
-        <button id="stopBtn">
-          ⏹️ Stop
-        </button>
-        <button id="playBtn">
-          ▶️
-        </button>
-        <div class="progress-group">
-          <span class="time current">
-            0:00
-          </span>
-          <input type="range" class="progress" min="0" max="100" value="0" />
-          <span class="time total">
-            0:00
-          </span>
-        </div>
-        <button id="forwardBtn">
-          ⏩ 15s
-        </button>
-        <span class="voice-label">
-          Jenny
-        </span>
-      </div>
-    </div>
-    <script>
-      document.addEventListener('DOMContentLoaded', () = >{
-        const sidebar = document.getElementById('sidebar');
-        const toggleBtn = document.getElementById('toggle-btn');
-        const chapterList = document.getElementById('chapterList');
-        const form = document.getElementById('uploadForm');
-        const textDiv = document.getElementById('textDisplay');
-        const statusDiv = document.getElementById('status');
-        const voiceSelect = document.getElementById('voiceSelect');
+<!DOCTYPE html> <html lang="en"> <head> <meta charset="UTF-8"/> <meta name="viewport" content="width=device-width, initial-scale=1"/> <title>EPUB Audio Reader</title> <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"/> <style> /* DARK THEME LAYOUT */ body { font-family: 'Inter', sans-serif; background: #121212; color: #eee; margin: 0; display: flex; height: 100vh; overflow: hidden; }
 
-        const player = document.querySelector('.eleven-player');
-        const playBtn = document.getElementById('playBtn');
-        const stopBtn = document.getElementById('stopBtn');
-        const rewindBtn = document.getElementById('rewindBtn');
-        const forwardBtn = document.getElementById('forwardBtn');
+/* SIDEBAR */
+#sidebar {
+  width: 250px;
+  background: #1f1f1f;
+  padding: 1rem;
+  transform: translateX(-250px);
+  transition: transform 0.3s ease;
+  overflow-y: auto;
+  box-shadow: 2px 0 6px rgba(0,0,0,0.5);
+  z-index: 100;
+}
+#sidebar.open {
+  transform: translateX(0);
+}
+#sidebar h2 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+#chapterList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+#chapterList li {
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+#chapterList li:hover {
+  background: rgba(76,139,245,0.2);
+}
+#toggle-btn {
+  position: absolute;
+  top: 1rem;
+  right: -2.5rem;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: 50%;
+  background: #4c8bf5;
+  color: #fff;
+  font-size: 1.2rem;
+  cursor: pointer;
+  box-shadow: 1px 1px 4px rgba(0,0,0,0.5);
+}
 
-        const prog = player.querySelector('.progress');
-        const curTime = player.querySelector('.current');
-        const totTime = player.querySelector('.total');
-        const voiceLabel = player.querySelector('.voice-label');
+/* MAIN */
+#main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 2rem;
+  overflow-y: auto;
+}
+h1 {
+  font-weight: 700;
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+form {
+  background: #1f1f1f;
+  padding: 1.5rem;
+  border-radius: 12px;
+  max-width: 600px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+input[type="file"], select, button {
+  font-size: 1rem;
+  padding: 0.8rem 1rem;
+  border: none;
+  border-radius: 8px;
+}
+input[type="file"], select {
+  background: #2a2a2a;
+  color: #eee;
+  cursor: pointer;
+}
+button {
+  background: #4c8bf5;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+button:hover {
+  background: #3a6fe2;
+}
 
-        const audio = new Audio();
-        audio.preload = 'metadata';
+/* EPUB TEXT AREA – Apple Books style */
+#textDisplay {
+  margin-top: 2rem;
+  max-width: 800px;
+  width: 100%;
+  padding: 1rem;
+  height: 80vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+}
 
-        let uploadId,
-        chunks = [],
-        cache = {},
-        currentIdx = 0,
-        playingSeq = false;
+#textDisplay p {
+  text-align: justify;
+  text-indent: 1em;
+  line-height: 1.6;
+  margin: 0 0 1em 0;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+  orphans: 2;
+  widows: 2;
+  cursor: pointer;
+  position: relative;
+}
 
-        // 🟦 Sidebar toggle
-        toggleBtn.onclick = () = >sidebar.classList.toggle('open');
+.highlight {
+  background: rgba(76,139,245,0.2);
+  border-left: 4px solid #4c8bf5;
+  padding-left: 0.5em;
+}
 
-        // 🟦 Voice dropdown
-        const voices = ["en-AU-NatashaNeural", "en-AU-WilliamNeural", "en-CA-ClaraNeural", "en-CA-LiamNeural", "en-GB-LibbyNeural", "en-GB-RyanNeural", "en-GB-SoniaNeural", "en-IN-NeerjaNeural", "en-IN-PriyaNeural", "en-US-AriaNeural", "en-US-GuyNeural", "en-US-JennyNeural", "en-US-MichelleNeural", "en-US-TonyNeural"];
-        voices.forEach(v = >{
-          const o = document.createElement('option');
-          o.value = v;
-          o.textContent = v;
-          voiceSelect.appendChild(o);
-        });
+@media (max-width: 700px) {
+  #textDisplay {
+    column-width: auto;
+    column-count: 1;
+  }
+}
 
-        // 🟦 Upload EPUB
-        form.addEventListener('submit', async e = >{
-          e.preventDefault();
-          statusDiv.textContent = 'Extracting text…';
-          textDiv.innerHTML = '';
-          chapterList.innerHTML = '';
-          player.style.display = 'flex';
-          cache = {};
+/* AUDIO PLAYER */
+.eleven-player {
+  display: flex;
+  align-items: center;
+  background: #1f1f1f;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  gap: 0.75rem;
+  max-width: 600px;
+  width: 100%;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  margin-top: 2rem;
+}
+.eleven-player button {
+  background: #292929;
+  border: none;
+  color: #fff;
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.eleven-player button:hover {
+  background: #3a3a3a;
+}
+.progress-group {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.time {
+  width: 2.5rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: #aaa;
+}
+.progress {
+  flex: 1;
+  height: 4px;
+  background: #333;
+  border-radius: 2px;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+.progress::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  background: #4c8bf5;
+  border-radius: 50%;
+  margin-top: -4px;
+}
 
-          const fd = new FormData(form);
-          const res = await fetch('/upload', {
-            method: 'POST',
-            body: fd
-          });
-          if (!res.ok) {
-            statusDiv.textContent = `Error: $ {
-              await res.text()
-            }`;
-            return;
-          }
-          const data = await res.json();
-          uploadId = data.upload_id;
-          chunks = data.text_chunks;
+</style> </head> <body>
 
-          const chapters = data.chapters || [];
-          if (chapters.length === 0) {
-            for (let i = 0; i < chunks.length; i += Math.floor(chunks.length / 10)) {
-              const li = document.createElement('li');
-              li.textContent = `Chapter $ {
-                i + 1
-              }`;
-              li.dataset.index = i;
-              chapterList.appendChild(li);
-            }
-          } else {
-            chapters.forEach((ch, idx) = >{
-              const li = document.createElement('li');
-              li.textContent = ch;
-              li.dataset.index = Math.floor(idx * chunks.length / chapters.length);
-              chapterList.appendChild(li);
-            });
-          }
+<div id="sidebar"> <button id="toggle-btn">☰</button> <h2>Chapters</h2> <ul id="chapterList"></ul> </div>
 
-          chunks.forEach((c, i) = >{
-            const p = document.createElement('p');
-            p.textContent = c;
-            p.dataset.index = i;
-            textDiv.appendChild(p);
-          });
+<div id="main"> <h1>EPUB Audio Reader</h1>
 
-          statusDiv.textContent = 'Click a chapter or paragraph to play.';
-        });
+<form id="uploadForm" enctype="multipart/form-data">
+  <input type="file" name="file" accept=".epub" required/>
+  <select id="voiceSelect" name="voice">
+    <option value="">Select Voice (default: Jenny)</option>
+  </select>
+  <button type="submit">Upload EPUB</button>
+</form>
 
-        chapterList.addEventListener('click', e = >{
-          if (e.target.tagName !== 'LI') return;
-          const idx = Number(e.target.dataset.index);
-          const p = textDiv.querySelector(`p[data - index = "${idx}"]`);
-          if (p) {
-            p.scrollIntoView({
-              behavior: 'smooth',
-              block: 'start'
-            });
-            startSequence(idx);
-          }
-        });
+<div id="status"></div>
+<div id="textDisplay"></div>
 
-        textDiv.addEventListener('click', e = >{
-          if (e.target.tagName !== 'P') return;
-          startSequence( + e.target.dataset.index);
-        });
+<div class="eleven-player">
+  <button id="rewindBtn">⏪ 15s</button>
+  <button id="stopBtn">⏹️ Stop</button>
+  <button id="playBtn">▶️</button>
 
-        function fetchChunk(i) {
-          if (cache[i]) return Promise.resolve(cache[i]);
-          return fetch('/chunk', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              upload_id: uploadId,
-              index: i
-            })
-          }).then(r = >r.ok ? r.blob() : Promise.reject(r.statusText)).then(blob = >{
-            const url = URL.createObjectURL(blob);
-            cache[i] = url;
-            return url;
-          });
-        }
+  <div class="progress-group">
+    <span class="time current">0:00</span>
+    <input type="range" class="progress" min="0" max="100" value="0"/>
+    <span class="time total">0:00</span>
+  </div>
 
-        function startSequence(idx) {
-          playingSeq = true;
-          currentIdx = idx;
-          voiceLabel.textContent = voiceSelect.value || 'Jenny';
-          player.style.display = 'flex';
-          playChunk(idx);
-        }
+  <button id="forwardBtn">⏩ 15s</button>
+  <span class="voice-label">Jenny</span>
+</div>
 
-        function playChunk(i) {
-          textDiv.querySelectorAll('p').forEach(p = >p.classList.remove('highlight'));
-          const p = textDiv.querySelector(`p[data - index = "${i}"]`);
-          if (p) p.classList.add('highlight');
+</div>
 
-          fetchChunk(i).then(url = >{
-            audio.src = url;
-            audio.play();
-          });
-        }
+<script> document.addEventListener('DOMContentLoaded', () => { const sidebar     = document.getElementById('sidebar'); const toggleBtn   = document.getElementById('toggle-btn'); const chapterList = document.getElementById('chapterList'); const form        = document.getElementById('uploadForm'); const textDiv     = document.getElementById('textDisplay'); const statusDiv   = document.getElementById('status'); const voiceSelect = document.getElementById('voiceSelect');
 
-        audio.onended = () = >{
-          if (playingSeq && currentIdx + 1 < chunks.length) {
-            currentIdx++;
-            playChunk(currentIdx);
-          } else {
-            playingSeq = false;
-          }
-        };
+  const player      = document.querySelector('.eleven-player');
+  const playBtn     = document.getElementById('playBtn');
+  const stopBtn     = document.getElementById('stopBtn');
+  const rewindBtn   = document.getElementById('rewindBtn');
+  const forwardBtn  = document.getElementById('forwardBtn');
 
-        audio.onloadedmetadata = () = >{
-          const d = Math.floor(audio.duration);
-          totTime.textContent = `$ {
-            Math.floor(d / 60)
-          }: $ {
-            String(d % 60).padStart(2, '0')
-          }`;
-        };
+  const prog        = player.querySelector('.progress');
+  const curTime     = player.querySelector('.current');
+  const totTime     = player.querySelector('.total');
+  const voiceLabel  = player.querySelector('.voice-label');
 
-        audio.ontimeupdate = () = >{
-          const t = Math.floor(audio.currentTime);
-          curTime.textContent = `$ {
-            Math.floor(t / 60)
-          }: $ {
-            String(t % 60).padStart(2, '0')
-          }`;
-          prog.value = (audio.currentTime / audio.duration) * 100 || 0;
-        };
+  const audio = new Audio();
+  audio.preload = 'metadata';
 
-        prog.oninput = e = >{
-          audio.currentTime = (e.target.value / 100) * audio.duration;
-        };
+  let uploadId, chunks = [], cache = {}, currentIdx = 0, playingSeq = false;
 
-        // PLAY/PAUSE
-        playBtn.onclick = () = >{
-          if (audio.paused) audio.play();
-          else audio.pause();
-        };
+  // 🟦 Sidebar toggle
+  toggleBtn.onclick = () => sidebar.classList.toggle('open');
 
-        // STOP
-        stopBtn.onclick = () = >{
-          audio.pause();
-          audio.currentTime = 0;
-          playingSeq = false;
-          textDiv.querySelectorAll('p').forEach(p = >p.classList.remove('highlight'));
-        };
+  // 🟦 Voice dropdown
+  const voices = [
+    "en-AU-NatashaNeural","en-AU-WilliamNeural",
+    "en-CA-ClaraNeural","en-CA-LiamNeural",
+    "en-GB-LibbyNeural","en-GB-RyanNeural","en-GB-SoniaNeural",
+    "en-IN-NeerjaNeural","en-IN-PriyaNeural",
+    "en-US-AriaNeural","en-US-GuyNeural","en-US-JennyNeural",
+    "en-US-MichelleNeural","en-US-TonyNeural"
+  ];
+  voices.forEach(v => {
+    const o = document.createElement('option');
+    o.value = v;
+    o.textContent = v;
+    voiceSelect.appendChild(o);
+  });
 
-        // ⏪ BACKWARD 15s
-        rewindBtn.onclick = () = >{
-          audio.currentTime = Math.max(0, audio.currentTime - 15);
-        };
+  // 🟦 Upload EPUB
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    statusDiv.textContent = 'Extracting text…';
+    textDiv.innerHTML = '';
+    chapterList.innerHTML = '';
+    player.style.display = 'flex';
+    cache = {};
 
-        // ⏩ FORWARD 15s
-        forwardBtn.onclick = () = >{
-          audio.currentTime = Math.min(audio.duration - 1, audio.currentTime + 15);
-        };
+    const fd = new FormData(form);
+    const res = await fetch('/upload', { method:'POST', body: fd });
+    if (!res.ok) {
+      statusDiv.textContent = `Error: ${await res.text()}`;
+      return;
+    }
+    const data = await res.json();
+    uploadId = data.upload_id;
+    chunks   = data.text_chunks;
 
+    const chapters = data.chapters || [];
+    if (chapters.length === 0) {
+      for (let i = 0; i < chunks.length; i += Math.floor(chunks.length / 10)) {
+        const li = document.createElement('li');
+        li.textContent = `Chapter ${i + 1}`;
+        li.dataset.index = i;
+        chapterList.appendChild(li);
+      }
+    } else {
+      chapters.forEach((ch, idx) => {
+        const li = document.createElement('li');
+        li.textContent = ch;
+        li.dataset.index = Math.floor(idx * chunks.length / chapters.length);
+        chapterList.appendChild(li);
       });
-    </script>
-  </body>
+    }
 
-</html>
+    chunks.forEach((c, i) => {
+      const p = document.createElement('p');
+      p.textContent = c;
+      p.dataset.index = i;
+      textDiv.appendChild(p);
+    });
+
+    statusDiv.textContent = 'Click a chapter or paragraph to play.';
+  });
+
+  chapterList.addEventListener('click', e => {
+    if (e.target.tagName !== 'LI') return;
+    const idx = Number(e.target.dataset.index);
+    const p = textDiv.querySelector(`p[data-index="${idx}"]`);
+    if (p) {
+      p.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      startSequence(idx);
+    }
+  });
+
+  textDiv.addEventListener('click', e => {
+    if (e.target.tagName !== 'P') return;
+    startSequence(+e.target.dataset.index);
+  });
+
+  function fetchChunk(i) {
+    if (cache[i]) return Promise.resolve(cache[i]);
+    return fetch('/chunk', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ upload_id: uploadId, index: i })
+    })
+    .then(r => r.ok ? r.blob() : Promise.reject(r.statusText))
+    .then(blob => {
+      const url = URL.createObjectURL(blob);
+      cache[i] = url;
+      return url;
+    });
+  }
+
+  function startSequence(idx) {
+    playingSeq = true;
+    currentIdx = idx;
+    voiceLabel.textContent = voiceSelect.value || 'Jenny';
+    player.style.display = 'flex';
+    playChunk(idx);
+  }
+
+  function playChunk(i) {
+    textDiv.querySelectorAll('p').forEach(p => p.classList.remove('highlight'));
+    const p = textDiv.querySelector(`p[data-index="${i}"]`);
+    if (p) p.classList.add('highlight');
+
+    fetchChunk(i).then(url => {
+      audio.src = url;
+      audio.play();
+    });
+  }
+
+  audio.onended = () => {
+    if (playingSeq && currentIdx + 1 < chunks.length) {
+      currentIdx++;
+      playChunk(currentIdx);
+    } else {
+      playingSeq = false;
+    }
+  };
+
+  audio.onloadedmetadata = () => {
+    const d = Math.floor(audio.duration);
+    totTime.textContent = `${Math.floor(d/60)}:${String(d%60).padStart(2,'0')}`;
+  };
+
+  audio.ontimeupdate = () => {
+    const t = Math.floor(audio.currentTime);
+    curTime.textContent = `${Math.floor(t/60)}:${String(t%60).padStart(2,'0')}`;
+    prog.value = (audio.currentTime / audio.duration) * 100 || 0;
+  };
+
+  prog.oninput = e => {
+    audio.currentTime = (e.target.value / 100) * audio.duration;
+  };
+
+  // PLAY/PAUSE
+  playBtn.onclick = () => {
+    if (audio.paused) audio.play();
+    else audio.pause();
+  };
+
+  // STOP
+  stopBtn.onclick = () => {
+    audio.pause();
+    audio.currentTime = 0;
+    playingSeq = false;
+    textDiv.querySelectorAll('p').forEach(p => p.classList.remove('highlight'));
+  };
+
+  // ⏪ BACKWARD 15s
+  rewindBtn.onclick = () => {
+    audio.currentTime = Math.max(0, audio.currentTime - 15);
+  };
+
+  // ⏩ FORWARD 15s
+  forwardBtn.onclick = () => {
+    audio.currentTime = Math.min(audio.duration - 1, audio.currentTime + 15);
+  };
+});
+
+</script> </body> </html>
