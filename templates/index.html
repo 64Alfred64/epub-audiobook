@@ -311,7 +311,7 @@
 <body>
   <div class="app-container h-screen w-screen grid grid-cols-[auto_1fr] grid-rows-[1fr_auto]">
     <!-- Hamburger and sidebar overlay removed -->
-    <nav class="sidebar row-span-2 h-full w-[280px] bg-black border-r border-[#333] overflow-y-auto p-5 z-[1101] transition-transform duration-300 -translate-x-full md:translate-x-0 fixed md:static top-0 left-0" id="sidebar" aria-label="Book navigation">
+    <nav class="sidebar" id="sidebar" aria-label="Book navigation" style="position:fixed;top:0;left:0;height:100vh;width:250px;overflow-y:auto;background:#000;z-index:1101;border-right:1px solid #333;padding:1rem;transition:transform 0.3s cubic-bezier(.4,0,.2,1);">
       <div class="sidebar-header flex items-center gap-2 mb-4 min-w-0">
         <button class="back-button control-btn" aria-label="Back to library">&lt;</button>
         <img id="sidebarCover" src="" alt="Book cover" style="width:56px;height:80px;object-fit:cover;border-radius:6px;background:#222;display:none;margin-right:0.75em;"/>
