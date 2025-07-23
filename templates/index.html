@@ -254,15 +254,246 @@
     </button>
     <audio id="mainAudio" preload="metadata" style="display:none"></audio>
   </div>
-  <!-- Settings Panel Modal injected and removed via script below -->
-  <script>
-    // REMOVE the old settings modal from the DOM if it exists
-    var oldModal = document.getElementById('settingsOverlay');
-    if (oldModal) oldModal.remove();
+  <!-- Dynamic Settings Modal injected by script below -->
 
-    // Open settings panel dynamically
+  <script>
+    // Hamburger always visible, both mobile and desktop
+    document.getElementById("audioBarHamburger").onclick = () => document.getElementById("hamburger").click();
+    const sidebar     = document.getElementById('sidebar');
+    const hamburger   = document.getElementById('hamburger');
+    const sidebarClose= document.getElementById('sidebar-close');
+    const overlay     = document.getElementById('sidebar-overlay');
+    hamburger.style.display = "block";
+    function openSidebar() { sidebar.classList.add('open'); hamburger.classList.add('open'); overlay.style.display = 'block'; hamburger.setAttribute('aria-label', 'Close chapters sidebar'); }
+    function closeSidebar() { sidebar.classList.remove('open'); hamburger.classList.remove('open'); overlay.style.display = 'none'; hamburger.setAttribute('aria-label', 'Open chapters sidebar'); }
+    hamburger.addEventListener('click', openSidebar);
+    sidebarClose.addEventListener('click', closeSidebar);
+    overlay.addEventListener('click', closeSidebar);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSidebar(); });
+    window.addEventListener('resize', () => { if (window.innerWidth >= 700) { closeSidebar(); } });
+    // Audio bar auto-hide
+    let audioBar = document.getElementById("audioBar");
+    let hideBarTimeout = null;
+    let barVisible = true;
+    function showAudioBar() {
+      if (!barVisible) { audioBar.style.opacity = "1"; barVisible = true; }
+      clearTimeout(hideBarTimeout);
+      hideBarTimeout = setTimeout(() => { audioBar.style.opacity = "0"; barVisible = false; }, 5000);
+    }
+    ["mousemove","touchstart","keydown"].forEach(evt => { document.addEventListener(evt, showAudioBar, {passive:true}); });
+    audioBar.addEventListener("mouseenter", ()=> { clearTimeout(hideBarTimeout); });
+    audioBar.addEventListener("mouseleave", showAudioBar);
+    showAudioBar();
+    // EPUB logic + audio player
+    const chapterList = document.getElementById('chapterList');
+    const form        = document.getElementById('uploadForm');
+    const textDiv     = document.getElementById('textDisplay');
+    const statusDiv   = document.getElementById('status');
+    const voiceSelect = document.getElementById('voiceSelect');
+    const mainAudio   = document.getElementById('mainAudio');
+    const playBtn     = document.getElementById('playBtn');
+    const rewindBtn   = document.getElementById('rewindBtn');
+    const forwardBtn  = document.getElementById('forwardBtn');
+    const stopBtn     = document.getElementById('stopBtn');
+    const speedSelect = document.getElementById('speedSelect');
+    const prog        = document.getElementById('audioProgress');
+    const curTime     = document.getElementById('audioTimeCurrent');
+    const totTime     = document.getElementById('audioTimeTotal');
+    const voiceLabel  = document.querySelector('.voice-label');
+    let uploadId, chunks = [], cache = {}, currentIdx = 0, playingSeq = false;
+    const voices = [
+      "en-AU-NatashaNeural","en-AU-WilliamNeural",
+      "en-CA-ClaraNeural","en-CA-LiamNeural",
+      "en-GB-LibbyNeural","en-GB-RyanNeural","en-GB-SoniaNeural",
+      "en-IN-NeerjaNeural","en-IN-PriyaNeural",
+      "en-US-AriaNeural","en-US-GuyNeural","en-US-JennyNeural",
+      "en-US-MichelleNeural","en-US-TonyNeural"
+    ];
+    voices.forEach(v => {
+      const o = document.createElement('option');
+      o.value = v;
+      o.textContent = v;
+      voiceSelect.appendChild(o);
+    });
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      statusDiv.textContent = 'Extracting text…';
+      textDiv.innerHTML = '';
+      chapterList.innerHTML = '';
+      cache = {};
+      const fd = new FormData(form);
+      const res = await fetch('/upload', { method:'POST', body: fd });
+      if (!res.ok) {
+        statusDiv.textContent = `Error: ${await res.text()}`;
+        return;
+      }
+      const data = await res.json();
+      uploadId = data.upload_id;
+      chunks   = data.text_chunks;
+      let chapters = data.chapters || [];
+      if (!chapters || chapters.length === 0) {
+        chapters = [];
+        function looksLikeChapter(text) {
+          return /^chapter\s+\d+/i.test(text)
+              || /^prologue$/i.test(text)
+              || /^epilogue$/i.test(text)
+              || /^book\s+\d+/i.test(text)
+              || /^part\s+\d+/i.test(text);
+        }
+        chunks.forEach((c, i) => {
+          if (looksLikeChapter(c.trim())) {
+            chapters.push({ title: c.trim(), index: i });
+          }
+        });
+        if(chapters.length === 0) {
+          for (let i = 0; i < chunks.length; i += Math.floor(chunks.length / 10)) {
+            chapters.push({ title: `Chapter ${i + 1}`, index: i });
+          }
+        }
+      }
+      chapterList.innerHTML = '';
+      chapters.forEach(ch => {
+        const li = document.createElement('li');
+        li.textContent = ch.title;
+        li.dataset.index = ch.index;
+        chapterList.appendChild(li);
+      });
+      textDiv.innerHTML = '';
+      chunks.forEach((c, i) => {
+        if (/^chapter\s+\d+/i.test(c.trim()) || /^prologue$/i.test(c.trim()) || /^epilogue$/i.test(c.trim())) {
+          const h = document.createElement('h2');
+          h.textContent = c.trim();
+          h.dataset.index = i;
+          textDiv.appendChild(h);
+        } else {
+          const p = document.createElement('p');
+          p.textContent = c;
+          p.dataset.index = i;
+          textDiv.appendChild(p);
+        }
+      });
+      statusDiv.textContent = 'Click a chapter or paragraph to play.';
+    });
+    chapterList.addEventListener('click', e => {
+      if (e.target.tagName !== 'LI') return;
+      const idx = Number(e.target.dataset.index);
+      const el = textDiv.querySelector(`[data-index="${idx}"]`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        startSequence(idx);
+      }
+      if (window.innerWidth < 700) closeSidebar();
+    });
+    textDiv.addEventListener('click', e => {
+      if (e.target.tagName !== 'P' && e.target.tagName !== 'H2') return;
+      startSequence(+e.target.dataset.index);
+    });
+    function fetchChunk(i) {
+      if (cache[i]) return Promise.resolve(cache[i]);
+      return fetch('/chunk', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ upload_id: uploadId, index: i })
+      })
+      .then(r => r.ok ? r.blob() : Promise.reject(r.statusText))
+      .then(blob => {
+        const url = URL.createObjectURL(blob);
+        cache[i] = url;
+        return url;
+      });
+    }
+    function startSequence(idx) {
+      playingSeq = true;
+      currentIdx = idx;
+      voiceLabel.textContent = voiceSelect.value || 'Jenny';
+      playChunk(idx);
+    }
+    function playChunk(i) {
+      textDiv.querySelectorAll('p, h2').forEach(p => p.classList.remove('highlight'));
+      const el = textDiv.querySelector(`[data-index="${i}"]`);
+      if (el) el.classList.add('highlight');
+      fetchChunk(i).then(url => {
+        mainAudio.src = url;
+        mainAudio.play();
+      });
+    }
+    mainAudio.onended = () => {
+      if (playingSeq && currentIdx + 1 < chunks.length) {
+        currentIdx++;
+        playChunk(currentIdx);
+      } else {
+        playingSeq = false;
+      }
+    };
+    mainAudio.onloadedmetadata = () => {
+      const d = Math.floor(mainAudio.duration);
+      totTime.textContent = `${Math.floor(d/60)}:${String(d%60).padStart(2,'0')}`;
+      prog.max = mainAudio.duration || 100;
+    };
+    mainAudio.ontimeupdate = () => {
+      const t = Math.floor(mainAudio.currentTime);
+      curTime.textContent = `${Math.floor(t/60)}:${String(t%60).padStart(2,'0')}`;
+      prog.value = mainAudio.currentTime || 0;
+    };
+    prog.oninput = e => {
+      mainAudio.currentTime = (e.target.value / prog.max) * mainAudio.duration;
+    };
+    // Play/Pause Toggle Button SVGs
+    function setPlayPauseIcon(isPlaying) {
+      document.getElementById('iconPlay').style.display = isPlaying ? "none" : "";
+      document.getElementById('iconPause').style.display = isPlaying ? "" : "none";
+    }
+    mainAudio.onplay = () => setPlayPauseIcon(true);
+    mainAudio.onpause = () => setPlayPauseIcon(false);
+    playBtn.onclick = () => {
+      if (mainAudio.paused) {
+        mainAudio.play();
+      } else {
+        mainAudio.pause();
+      }
+    };
+    rewindBtn.onclick = () => {
+      mainAudio.currentTime = Math.max(0, mainAudio.currentTime - 15);
+    };
+    forwardBtn.onclick = () => {
+      mainAudio.currentTime = Math.min(mainAudio.duration, mainAudio.currentTime + 15);
+    };
+    speedSelect.addEventListener('change', () => {
+      mainAudio.playbackRate = parseFloat(speedSelect.value);
+    });
+    mainAudio.playbackRate = parseFloat(speedSelect.value);
+    // Keyboard accessibility for audio bar
+    playBtn.onkeydown = rewindBtn.onkeydown = forwardBtn.onkeydown = function(e) {
+      if (e.key === " " || e.key === "Enter") { e.preventDefault(); this.click(); }
+    };
+    document.addEventListener('keydown', function(e) {
+      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT") return;
+      if (e.key === " ") {
+        e.preventDefault(); playBtn.click();
+      }
+      if (e.key === "ArrowLeft") rewindBtn.click();
+      if (e.key === "ArrowRight") forwardBtn.click();
+    });
+    // Mobile bar sizing
+    function adjustAudioBarForMobile() {
+      if(window.innerWidth < 700) {
+        audioBar.classList.add("text-base", "py-1");
+        audioBar.querySelectorAll("button,select").forEach(el => {
+          el.classList.add("p-1", "text-base");
+        });
+      } else {
+        audioBar.classList.remove("text-base", "py-1");
+        audioBar.querySelectorAll("button,select").forEach(el => {
+          el.classList.remove("p-1", "text-base");
+        });
+      }
+    }
+    window.addEventListener("resize", adjustAudioBarForMobile);
+    adjustAudioBarForMobile();
+
+    // ===== DYNAMIC SETTINGS PANEL MODAL INJECTION =====
     document.getElementById("audioBarSettingsBtn").onclick = function openSettingsPanel() {
-      // Remove any old modal
+      // Remove any old modal if present
       var old = document.getElementById('settingsOverlayDynamic');
       if (old) old.remove();
       var overlay = document.createElement('div');
@@ -276,7 +507,6 @@
           <main class="p-6 space-y-7">
             <section id="settingsPreview" class="rounded-xl transition-all duration-200 shadow-inner px-6 py-4 border bg-white text-gray-900 font-serif" style="font-size:1.1em;line-height:1.75;letter-spacing:0em;word-spacing:0em;margin:1.5em;text-align:justify;"><div class="mb-1 text-[0.95em] opacity-70 font-medium">Chapter One</div><div>The quick brown fox jumps over the lazy dog. “Reading should be a joy, not a chore,” she thought, as she adjusted her book’s settings.</div></section>
             <div class="my-2 text-xs text-gray-500">Close with ×, Escape, or click outside.</div>
-            <!-- Add your settings controls here if needed -->
           </main>
         </div>
       `;
@@ -293,9 +523,6 @@
       document.addEventListener("keydown", keydownHandler);
       setTimeout(()=>{ var modal = overlay.querySelector('#settingsPanelModalDynamic'); if (modal) modal.focus(); }, 25);
     };
-
-    // ... [the rest of your logic remains unchanged] ...
   </script>
-  <!-- rest of your scripts ... -->
 </body>
 </html>
