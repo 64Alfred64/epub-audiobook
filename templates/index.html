@@ -1,248 +1,256 @@
-<!DOCTYPE html> <html lang="en"> <head> <meta charset="UTF-8"/> <meta name="viewport" content="width=device-width, initial-scale=1"/> <title>EPUB Audio Reader</title> <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"/> <style> /* DARK THEME LAYOUT */ body { font-family: 'Inter', sans-serif; background: #121212; color: #eee; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>EPUB Audio Reader</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"/>
+  <style>
+    /* ...all your existing styles above... */
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #121212;
+      color: #eee;
+      margin: 0;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
 
-/* SIDEBAR */
-#sidebar {
-  width: 250px;
-  background: #1f1f1f;
-  padding: 1rem;
-  transform: translateX(-250px);
-  transition: transform 0.3s ease;
-  overflow-y: auto;
-  box-shadow: 2px 0 6px rgba(0,0,0,0.5);
-  z-index: 100;
-}
-#sidebar.open {
-  transform: translateX(0);
-}
-#sidebar h2 {
-  margin-top: 0;
-  margin-bottom: 1rem;
-  font-size: 1.2rem;
-  font-weight: 600;
-}
-#chapterList {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-#chapterList li {
-  padding: 0.5rem 0.75rem;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-#chapterList li:hover {
-  background: rgba(76,139,245,0.2);
-}
-#toggle-btn {
-  position: absolute;
-  top: 1rem;
-  right: -2.5rem;
-  width: 2rem;
-  height: 2rem;
-  border: none;
-  border-radius: 50%;
-  background: #4c8bf5;
-  color: #fff;
-  font-size: 1.2rem;
-  cursor: pointer;
-  box-shadow: 1px 1px 4px rgba(0,0,0,0.5);
-}
+    /* SIDEBAR */
+    #sidebar {
+      width: 250px;
+      background: #1f1f1f;
+      padding: 1rem;
+      transform: translateX(-250px);
+      transition: transform 0.3s ease;
+      overflow-y: auto;
+      box-shadow: 2px 0 6px rgba(0,0,0,0.5);
+      z-index: 1001;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      height: 100vh;
+    }
+    #sidebar.open {
+      transform: translateX(0);
+    }
+    #sidebar h2 {
+      margin-top: 0;
+      margin-bottom: 1rem;
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+    #chapterList {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    #chapterList li {
+      padding: 0.5rem 0.75rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    #chapterList li:hover {
+      background: rgba(76,139,245,0.2);
+    }
 
-/* MAIN */
-#main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  padding: 2rem;
-  overflow-y: auto;
-}
-h1 {
-  font-weight: 700;
-  margin-top: 0;
-  margin-bottom: 1rem;
-}
-form {
-  background: #1f1f1f;
-  padding: 1.5rem;
-  border-radius: 12px;
-  max-width: 600px;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-}
-input[type="file"], select, button {
-  font-size: 1rem;
-  padding: 0.8rem 1rem;
-  border: none;
-  border-radius: 8px;
-}
-input[type="file"], select {
-  background: #2a2a2a;
-  color: #eee;
-  cursor: pointer;
-}
-button {
-  background: #4c8bf5;
-  color: #fff;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-button:hover {
-  background: #3a6fe2;
-}
+    /* Hamburger styles */
+    #hamburger {
+      position: fixed;
+      top: 1rem;
+      left: 1rem;
+      width: 2.5rem;
+      height: 2.5rem;
+      background: #4c8bf5;
+      border: none;
+      border-radius: 50%;
+      color: #fff;
+      font-size: 1.4rem;
+      cursor: pointer;
+      z-index: 1100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 1px 1px 4px rgba(0,0,0,0.5);
+      transition: background 0.2s;
+    }
+    #hamburger:focus {
+      outline: 2px solid #fff;
+    }
+    #hamburger.open {
+      background: #3a6fe2;
+    }
+    /* Hide #toggle-btn (old button INSIDE sidebar) */
+    #toggle-btn {
+      display: none !important;
+    }
 
-/* EPUB TEXT AREA – Apple Books style */
-#textDisplay {
-  margin-top: 2rem;
-  max-width: 800px;
-  width: 100%;
-  padding: 1rem;
-  height: 80vh;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 1em;
-}
+    /* Overlay for closing sidebar */
+    #sidebar-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+    }
+    #sidebar.open + #sidebar-overlay {
+      display: block;
+    }
 
-#textDisplay p {
-  text-align: justify;
-  text-indent: 1em;
-  line-height: 1.6;
-  margin: 0 0 1em 0;
-  -webkit-hyphens: auto;
-  hyphens: auto;
-  orphans: 2;
-  widows: 2;
-  cursor: pointer;
-  position: relative;
-}
+    /* MAIN */
+    #main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 2rem;
+      overflow-y: auto;
+      margin-left: 0;
+      transition: margin 0.3s;
+      width: 100vw;
+    }
+    @media (min-width: 700px) {
+      #sidebar {
+        position: static;
+        transform: none;
+        width: 250px;
+        height: 100vh;
+        z-index: 100;
+      }
+      #main {
+        margin-left: 250px;
+        width: calc(100vw - 250px);
+      }
+      #hamburger {
+        display: none;
+      }
+      #sidebar-overlay {
+        display: none !important;
+      }
+    }
+    /* ...rest of your CSS (audio player, etc.)... */
+    /* EPUB TEXT AREA – Apple Books style */
+    #textDisplay {
+      margin-top: 2rem;
+      max-width: 800px;
+      width: 100%;
+      padding: 1rem;
+      height: 80vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1em;
+    }
 
-.highlight {
-  background: rgba(76,139,245,0.2);
-  border-left: 4px solid #4c8bf5;
-  padding-left: 0.5em;
-}
+    #textDisplay p {
+      text-align: justify;
+      text-indent: 1em;
+      line-height: 1.6;
+      margin: 0 0 1em 0;
+      -webkit-hyphens: auto;
+      hyphens: auto;
+      orphans: 2;
+      widows: 2;
+      cursor: pointer;
+      position: relative;
+    }
+    .highlight {
+      background: rgba(76,139,245,0.2);
+      border-left: 4px solid #4c8bf5;
+      padding-left: 0.5em;
+    }
+  </style>
+</head>
+<body>
 
-@media (max-width: 700px) {
-  #textDisplay {
-    column-width: auto;
-    column-count: 1;
-  }
-}
+<!-- Hamburger icon OUTSIDE sidebar, visible on mobile -->
+<button id="hamburger" aria-label="Open sidebar">☰</button>
 
-/* AUDIO PLAYER */
-.eleven-player {
-  display: flex;
-  align-items: center;
-  background: #1f1f1f;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  gap: 0.75rem;
-  max-width: 600px;
-  width: 100%;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-  margin-top: 2rem;
-}
-.eleven-player button {
-  background: #292929;
-  border: none;
-  color: #fff;
-  border-radius: 6px;
-  padding: 0.4rem 0.6rem;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.eleven-player button:hover {
-  background: #3a3a3a;
-}
-.progress-group {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-.time {
-  width: 2.5rem;
-  text-align: center;
-  font-size: 0.85rem;
-  color: #aaa;
-}
-.progress {
-  flex: 1;
-  height: 4px;
-  background: #333;
-  border-radius: 2px;
-  -webkit-appearance: none;
-  cursor: pointer;
-}
-.progress::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 12px;
-  height: 12px;
-  background: #4c8bf5;
-  border-radius: 50%;
-  margin-top: -4px;
-}
+<div id="sidebar">
+  <!-- Old button, now hidden by CSS: <button id="toggle-btn">☰</button> -->
+  <h2>Chapters</h2>
+  <ul id="chapterList"></ul>
+</div>
+<div id="sidebar-overlay"></div>
 
-</style> </head> <body>
-
-<div id="sidebar"> <button id="toggle-btn">☰</button> <h2>Chapters</h2> <ul id="chapterList"></ul> </div>
-
-<div id="main"> <h1>EPUB Audio Reader</h1>
-
-<form id="uploadForm" enctype="multipart/form-data">
-  <input type="file" name="file" accept=".epub" required/>
-  <select id="voiceSelect" name="voice">
-    <option value="">Select Voice (default: Jenny)</option>
-  </select>
-  <button type="submit">Upload EPUB</button>
-</form>
-
-<div id="status"></div>
-<div id="textDisplay"></div>
-
-<div class="eleven-player">
-  <button id="rewindBtn">⏪ 15s</button>
-  <button id="stopBtn">⏹️ Stop</button>
-  <button id="playBtn">▶️</button>
-
-  <div class="progress-group">
-    <span class="time current">0:00</span>
-    <input type="range" class="progress" min="0" max="100" value="0"/>
-    <span class="time total">0:00</span>
+<div id="main">
+  <h1>EPUB Audio Reader</h1>
+  <form id="uploadForm" enctype="multipart/form-data">
+    <input type="file" name="file" accept=".epub" required/>
+    <select id="voiceSelect" name="voice">
+      <option value="">Select Voice (default: Jenny)</option>
+    </select>
+    <button type="submit">Upload EPUB</button>
+  </form>
+  <div id="status"></div>
+  <div id="textDisplay"></div>
+  <div class="eleven-player">
+    <button id="rewindBtn">⏪ 15s</button>
+    <button id="stopBtn">⏹️ Stop</button>
+    <button id="playBtn">▶️</button>
+    <div class="progress-group">
+      <span class="time current">0:00</span>
+      <input type="range" class="progress" min="0" max="100" value="0"/>
+      <span class="time total">0:00</span>
+    </div>
+    <button id="forwardBtn">⏩ 15s</button>
+    <span class="voice-label">Jenny</span>
   </div>
-
-  <button id="forwardBtn">⏩ 15s</button>
-  <span class="voice-label">Jenny</span>
 </div>
 
-</div>
-
-<script> document.addEventListener('DOMContentLoaded', () => { const sidebar     = document.getElementById('sidebar'); const toggleBtn   = document.getElementById('toggle-btn'); const chapterList = document.getElementById('chapterList'); const form        = document.getElementById('uploadForm'); const textDiv     = document.getElementById('textDisplay'); const statusDiv   = document.getElementById('status'); const voiceSelect = document.getElementById('voiceSelect');
-
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const sidebar     = document.getElementById('sidebar');
+  const hamburger   = document.getElementById('hamburger');
+  const overlay     = document.getElementById('sidebar-overlay');
+  const chapterList = document.getElementById('chapterList');
+  const form        = document.getElementById('uploadForm');
+  const textDiv     = document.getElementById('textDisplay');
+  const statusDiv   = document.getElementById('status');
+  const voiceSelect = document.getElementById('voiceSelect');
   const player      = document.querySelector('.eleven-player');
   const playBtn     = document.getElementById('playBtn');
   const stopBtn     = document.getElementById('stopBtn');
   const rewindBtn   = document.getElementById('rewindBtn');
   const forwardBtn  = document.getElementById('forwardBtn');
-
   const prog        = player.querySelector('.progress');
   const curTime     = player.querySelector('.current');
   const totTime     = player.querySelector('.total');
   const voiceLabel  = player.querySelector('.voice-label');
-
   const audio = new Audio();
   audio.preload = 'metadata';
-
   let uploadId, chunks = [], cache = {}, currentIdx = 0, playingSeq = false;
 
-  // 🟦 Sidebar toggle
-  toggleBtn.onclick = () => sidebar.classList.toggle('open');
+  // --- Sidebar hamburger logic ---
+  function openSidebar() {
+    sidebar.classList.add('open');
+    hamburger.classList.add('open');
+    overlay.style.display = 'block';
+    hamburger.setAttribute('aria-label', 'Close sidebar');
+  }
+  function closeSidebar() {
+    sidebar.classList.remove('open');
+    hamburger.classList.remove('open');
+    overlay.style.display = 'none';
+    hamburger.setAttribute('aria-label', 'Open sidebar');
+  }
+  hamburger.addEventListener('click', () => {
+    if (sidebar.classList.contains('open')) closeSidebar();
+    else openSidebar();
+  });
+  overlay.addEventListener('click', closeSidebar);
+  // Close with ESC
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeSidebar();
+  });
+
+  // Hide overlay/sidebar on desktop resize
+  window.addEventListener('resize', () => {
+    if (window.innerWidth >= 700) {
+      closeSidebar();
+    }
+  });
 
   // 🟦 Voice dropdown
   const voices = [
@@ -314,6 +322,8 @@ button:hover {
       p.scrollIntoView({ behavior: 'smooth', block: 'start' });
       startSequence(idx);
     }
+    // On mobile, close sidebar after chapter picked
+    if (window.innerWidth < 700) closeSidebar();
   });
 
   textDiv.addEventListener('click', e => {
@@ -400,8 +410,9 @@ button:hover {
 
   // ⏩ FORWARD 15s
   forwardBtn.onclick = () => {
-    audio.currentTime = Math.min(0, audio.currentTime + 15);
+    audio.currentTime = Math.min(audio.duration, audio.currentTime + 15);
   };
 });
-
-</script> </body> </html>
+</script>
+</body>
+</html>
