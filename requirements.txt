@@ -1,5 +1,5 @@
 Flask
+flask-cors
 ebooklib
 beautifulsoup4
-nltk
 edge-tts
