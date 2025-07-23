@@ -252,8 +252,8 @@
       </form>
       <div id="status" style="font-size:0.95rem;color:#bbb;margin-left:16px;"></div>
     </div>
-    <div class="main-content col-start-2 row-start-1 bg-black text-white pt-8 pb-0 pr-0 pl-0 flex flex-col h-full overflow-y-auto transition-all duration-300" id="mainContent" style="margin-top:60px;">
-      <div id="textDisplay"></div>
+    <div class="main-content col-start-2 row-start-1 bg-black text-white pb-0 pr-0 pl-0 flex flex-col h-full transition-all duration-300" id="mainContent" style="margin-top:60px;">
+      <div id="textDisplay" style="flex:1 1 auto; overflow-y:auto; min-height:0; max-height:calc(100vh - 60px - 112px); padding: 0 1.5rem;"> </div>
     </div>
     <div class="media-controls col-span-2 row-start-2 w-full bg-black border-t border-[#333] p-4 z-[1000] flex flex-col gap-2" id="mediaControls" style="position:sticky; bottom:0; left:0; right:0;">
       <div class="progress-container flex items-center gap-3 mb-2">
@@ -415,11 +415,21 @@
       });
       textDiv.innerHTML = '';
       chunks.forEach((c, i) => {
-        if (/^chapter\s+\d+/i.test(c.trim()) || /^prologue$/i.test(c.trim()) || /^epilogue$/i.test(c.trim())) {
+        const trimmed = c.trim();
+        if (/^chapter\s+\d+/i.test(trimmed) || /^prologue$/i.test(trimmed) || /^epilogue$/i.test(trimmed)) {
           const h = document.createElement('h2');
-          h.textContent = c.trim();
+          h.textContent = trimmed;
           h.dataset.index = i;
           textDiv.appendChild(h);
+        } else if (/^data:image\//.test(trimmed) || /\.(jpg|jpeg|png|gif)$/i.test(trimmed)) {
+          const img = document.createElement('img');
+          img.src = trimmed;
+          img.alt = `Image ${i+1}`;
+          img.style.maxWidth = '100%';
+          img.style.display = 'block';
+          img.style.margin = '1.5em auto';
+          img.dataset.index = i;
+          textDiv.appendChild(img);
         } else {
           const p = document.createElement('p');
           p.textContent = c;
