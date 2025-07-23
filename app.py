@@ -12,13 +12,11 @@ from bs4 import BeautifulSoup
 app = Flask(__name__)
 CORS(app)
 
-# use /tmp on Render for writable storage
 UPLOAD_FOLDER = '/tmp/uploads'
 AUDIO_FOLDER  = '/tmp/audio_chunks'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(AUDIO_FOLDER, exist_ok=True)
 
-# in-memory store for each upload’s text chunks and chosen voice
 uploads = {}
 
 def clean_text(text):
@@ -36,13 +34,8 @@ def extract_epub_text(path):
     return title, clean_text(full_text)
 
 def chunk_text(text, max_chars=500):
-    import nltk
-    from nltk.tokenize import sent_tokenize
-    try:
-        nltk.data.find('tokenizers/punkt')
-    except LookupError:
-        nltk.download('punkt', quiet=True)
-    sentences = sent_tokenize(text)
+    # regex‐split into sentences, then pack to ~max_chars
+    sentences = re.split(r'(?<=[.?!])\s+', text)
     chunks, current = [], ""
     for s in sentences:
         if len(current) + len(s) + 1 <= max_chars:
