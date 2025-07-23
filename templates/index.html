@@ -6,7 +6,6 @@
   <title>EPUB Audio Reader</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"/>
   <style>
-    /* ...all your existing styles above... */
     body {
       font-family: 'Inter', sans-serif;
       background: #121212;
@@ -129,290 +128,380 @@
         display: none !important;
       }
     }
-    /* ...rest of your CSS (audio player, etc.)... */
-    /* EPUB TEXT AREA – Apple Books style */
-    #textDisplay {
-      margin-top: 2rem;
-      max-width: 800px;
-      width: 100%;
-      padding: 1rem;
-      height: 80vh;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 1em;
-    }
 
+    /* --- Apple Books Style --- */
+    #textDisplay {
+      margin: 3em auto 0 auto;
+      max-width: 700px;
+      width: 100%;
+      padding: 2em 1.5em 3em 1.5em;
+      background: #181818;
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.22);
+      font-family: 'Georgia', 'Times New Roman', serif;
+      font-size: 1.18em;
+      line-height: 1.75;
+      color: #ececec;
+      letter-spacing: 0.01em;
+    }
+    #textDisplay h1, #textDisplay h2, #textDisplay h3 {
+      font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+      color: #f6f6f6;
+      margin-top: 2.5em;
+      margin-bottom: 1.5em;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      text-align: center;
+    }
     #textDisplay p {
+      margin: 0 0 1.4em 0;
       text-align: justify;
-      text-indent: 1em;
-      line-height: 1.6;
-      margin: 0 0 1em 0;
-      -webkit-hyphens: auto;
-      hyphens: auto;
-      orphans: 2;
-      widows: 2;
-      cursor: pointer;
-      position: relative;
+      text-indent: 2em;
+      font-size: 1.18em;
+      line-height: 1.75;
+    }
+    #textDisplay p + h1, #textDisplay p + h2, #textDisplay p + h3 {
+      margin-top: 2.5em;
     }
     .highlight {
-      background: rgba(76,139,245,0.2);
+      background: rgba(76,139,245,0.18);
       border-left: 4px solid #4c8bf5;
       padding-left: 0.5em;
+    }
+    @media (max-width: 700px) {
+      #textDisplay {
+        padding: 1em 0.5em 1.5em 0.5em;
+        max-width: 100vw;
+        border-radius: 0;
+      }
+    }
+
+    /* EPUB AUDIO PLAYER (unchanged) */
+    .eleven-player {
+      display: flex;
+      align-items: center;
+      background: #1f1f1f;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      gap: 0.75rem;
+      max-width: 600px;
+      width: 100%;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      margin-top: 2rem;
+    }
+    .eleven-player button {
+      background: #292929;
+      border: none;
+      color: #fff;
+      border-radius: 6px;
+      padding: 0.4rem 0.6rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .eleven-player button:hover {
+      background: #3a3a3a;
+    }
+    .progress-group {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .time {
+      width: 2.5rem;
+      text-align: center;
+      font-size: 0.85rem;
+      color: #aaa;
+    }
+    .progress {
+      flex: 1;
+      height: 4px;
+      background: #333;
+      border-radius: 2px;
+      -webkit-appearance: none;
+      cursor: pointer;
+    }
+    .progress::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      background: #4c8bf5;
+      border-radius: 50%;
+      margin-top: -4px;
     }
   </style>
 </head>
 <body>
+  <!-- Hamburger icon OUTSIDE sidebar, visible on mobile -->
+  <button id="hamburger" aria-label="Open sidebar">☰</button>
 
-<!-- Hamburger icon OUTSIDE sidebar, visible on mobile -->
-<button id="hamburger" aria-label="Open sidebar">☰</button>
-
-<div id="sidebar">
-  <!-- Old button, now hidden by CSS: <button id="toggle-btn">☰</button> -->
-  <h2>Chapters</h2>
-  <ul id="chapterList"></ul>
-</div>
-<div id="sidebar-overlay"></div>
-
-<div id="main">
-  <h1>EPUB Audio Reader</h1>
-  <form id="uploadForm" enctype="multipart/form-data">
-    <input type="file" name="file" accept=".epub" required/>
-    <select id="voiceSelect" name="voice">
-      <option value="">Select Voice (default: Jenny)</option>
-    </select>
-    <button type="submit">Upload EPUB</button>
-  </form>
-  <div id="status"></div>
-  <div id="textDisplay"></div>
-  <div class="eleven-player">
-    <button id="rewindBtn">⏪ 15s</button>
-    <button id="stopBtn">⏹️ Stop</button>
-    <button id="playBtn">▶️</button>
-    <div class="progress-group">
-      <span class="time current">0:00</span>
-      <input type="range" class="progress" min="0" max="100" value="0"/>
-      <span class="time total">0:00</span>
-    </div>
-    <button id="forwardBtn">⏩ 15s</button>
-    <span class="voice-label">Jenny</span>
+  <div id="sidebar">
+    <h2>Chapters</h2>
+    <ul id="chapterList"></ul>
   </div>
-</div>
+  <div id="sidebar-overlay"></div>
 
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  const sidebar     = document.getElementById('sidebar');
-  const hamburger   = document.getElementById('hamburger');
-  const overlay     = document.getElementById('sidebar-overlay');
-  const chapterList = document.getElementById('chapterList');
-  const form        = document.getElementById('uploadForm');
-  const textDiv     = document.getElementById('textDisplay');
-  const statusDiv   = document.getElementById('status');
-  const voiceSelect = document.getElementById('voiceSelect');
-  const player      = document.querySelector('.eleven-player');
-  const playBtn     = document.getElementById('playBtn');
-  const stopBtn     = document.getElementById('stopBtn');
-  const rewindBtn   = document.getElementById('rewindBtn');
-  const forwardBtn  = document.getElementById('forwardBtn');
-  const prog        = player.querySelector('.progress');
-  const curTime     = player.querySelector('.current');
-  const totTime     = player.querySelector('.total');
-  const voiceLabel  = player.querySelector('.voice-label');
-  const audio = new Audio();
-  audio.preload = 'metadata';
-  let uploadId, chunks = [], cache = {}, currentIdx = 0, playingSeq = false;
+  <div id="main">
+    <h1>EPUB Audio Reader</h1>
+    <form id="uploadForm" enctype="multipart/form-data">
+      <input type="file" name="file" accept=".epub" required/>
+      <select id="voiceSelect" name="voice">
+        <option value="">Select Voice (default: Jenny)</option>
+      </select>
+      <button type="submit">Upload EPUB</button>
+    </form>
+    <div id="status"></div>
+    <div id="textDisplay"></div>
+    <div class="eleven-player">
+      <button id="rewindBtn">⏪ 15s</button>
+      <button id="stopBtn">⏹️ Stop</button>
+      <button id="playBtn">▶️</button>
+      <div class="progress-group">
+        <span class="time current">0:00</span>
+        <input type="range" class="progress" min="0" max="100" value="0"/>
+        <span class="time total">0:00</span>
+      </div>
+      <button id="forwardBtn">⏩ 15s</button>
+      <span class="voice-label">Jenny</span>
+    </div>
+  </div>
 
-  // --- Sidebar hamburger logic ---
-  function openSidebar() {
-    sidebar.classList.add('open');
-    hamburger.classList.add('open');
-    overlay.style.display = 'block';
-    hamburger.setAttribute('aria-label', 'Close sidebar');
-  }
-  function closeSidebar() {
-    sidebar.classList.remove('open');
-    hamburger.classList.remove('open');
-    overlay.style.display = 'none';
-    hamburger.setAttribute('aria-label', 'Open sidebar');
-  }
-  hamburger.addEventListener('click', () => {
-    if (sidebar.classList.contains('open')) closeSidebar();
-    else openSidebar();
-  });
-  overlay.addEventListener('click', closeSidebar);
-  // Close with ESC
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeSidebar();
-  });
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const sidebar     = document.getElementById('sidebar');
+    const hamburger   = document.getElementById('hamburger');
+    const overlay     = document.getElementById('sidebar-overlay');
+    const chapterList = document.getElementById('chapterList');
+    const form        = document.getElementById('uploadForm');
+    const textDiv     = document.getElementById('textDisplay');
+    const statusDiv   = document.getElementById('status');
+    const voiceSelect = document.getElementById('voiceSelect');
+    const player      = document.querySelector('.eleven-player');
+    const playBtn     = document.getElementById('playBtn');
+    const stopBtn     = document.getElementById('stopBtn');
+    const rewindBtn   = document.getElementById('rewindBtn');
+    const forwardBtn  = document.getElementById('forwardBtn');
+    const prog        = player.querySelector('.progress');
+    const curTime     = player.querySelector('.current');
+    const totTime     = player.querySelector('.total');
+    const voiceLabel  = player.querySelector('.voice-label');
+    const audio = new Audio();
+    audio.preload = 'metadata';
+    let uploadId, chunks = [], cache = {}, currentIdx = 0, playingSeq = false;
 
-  // Hide overlay/sidebar on desktop resize
-  window.addEventListener('resize', () => {
-    if (window.innerWidth >= 700) {
-      closeSidebar();
+    // --- Sidebar hamburger logic ---
+    function openSidebar() {
+      sidebar.classList.add('open');
+      hamburger.classList.add('open');
+      overlay.style.display = 'block';
+      hamburger.setAttribute('aria-label', 'Close sidebar');
     }
-  });
-
-  // 🟦 Voice dropdown
-  const voices = [
-    "en-AU-NatashaNeural","en-AU-WilliamNeural",
-    "en-CA-ClaraNeural","en-CA-LiamNeural",
-    "en-GB-LibbyNeural","en-GB-RyanNeural","en-GB-SoniaNeural",
-    "en-IN-NeerjaNeural","en-IN-PriyaNeural",
-    "en-US-AriaNeural","en-US-GuyNeural","en-US-JennyNeural",
-    "en-US-MichelleNeural","en-US-TonyNeural"
-  ];
-  voices.forEach(v => {
-    const o = document.createElement('option');
-    o.value = v;
-    o.textContent = v;
-    voiceSelect.appendChild(o);
-  });
-
-  // 🟦 Upload EPUB
-  form.addEventListener('submit', async e => {
-    e.preventDefault();
-    statusDiv.textContent = 'Extracting text…';
-    textDiv.innerHTML = '';
-    chapterList.innerHTML = '';
-    player.style.display = 'flex';
-    cache = {};
-
-    const fd = new FormData(form);
-    const res = await fetch('/upload', { method:'POST', body: fd });
-    if (!res.ok) {
-      statusDiv.textContent = `Error: ${await res.text()}`;
-      return;
+    function closeSidebar() {
+      sidebar.classList.remove('open');
+      hamburger.classList.remove('open');
+      overlay.style.display = 'none';
+      hamburger.setAttribute('aria-label', 'Open sidebar');
     }
-    const data = await res.json();
-    uploadId = data.upload_id;
-    chunks   = data.text_chunks;
-
-    const chapters = data.chapters || [];
-    if (chapters.length === 0) {
-      for (let i = 0; i < chunks.length; i += Math.floor(chunks.length / 10)) {
-        const li = document.createElement('li');
-        li.textContent = `Chapter ${i + 1}`;
-        li.dataset.index = i;
-        chapterList.appendChild(li);
+    hamburger.addEventListener('click', () => {
+      if (sidebar.classList.contains('open')) closeSidebar();
+      else openSidebar();
+    });
+    overlay.addEventListener('click', closeSidebar);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeSidebar();
+    });
+    window.addEventListener('resize', () => {
+      if (window.innerWidth >= 700) {
+        closeSidebar();
       }
-    } else {
-      chapters.forEach((ch, idx) => {
+    });
+
+    // Voice dropdown
+    const voices = [
+      "en-AU-NatashaNeural","en-AU-WilliamNeural",
+      "en-CA-ClaraNeural","en-CA-LiamNeural",
+      "en-GB-LibbyNeural","en-GB-RyanNeural","en-GB-SoniaNeural",
+      "en-IN-NeerjaNeural","en-IN-PriyaNeural",
+      "en-US-AriaNeural","en-US-GuyNeural","en-US-JennyNeural",
+      "en-US-MichelleNeural","en-US-TonyNeural"
+    ];
+    voices.forEach(v => {
+      const o = document.createElement('option');
+      o.value = v;
+      o.textContent = v;
+      voiceSelect.appendChild(o);
+    });
+
+    // Upload EPUB
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      statusDiv.textContent = 'Extracting text…';
+      textDiv.innerHTML = '';
+      chapterList.innerHTML = '';
+      player.style.display = 'flex';
+      cache = {};
+
+      const fd = new FormData(form);
+      const res = await fetch('/upload', { method:'POST', body: fd });
+      if (!res.ok) {
+        statusDiv.textContent = `Error: ${await res.text()}`;
+        return;
+      }
+      const data = await res.json();
+      uploadId = data.upload_id;
+      chunks   = data.text_chunks;
+
+      // --- Improved Chapter Detection ---
+      let chapters = data.chapters || [];
+      // Heuristic detection if backend fails
+      if (!chapters || chapters.length === 0) {
+        chapters = [];
+        function looksLikeChapter(text) {
+          return /^chapter\s+\d+/i.test(text)
+              || /^prologue$/i.test(text)
+              || /^epilogue$/i.test(text)
+              || /^book\s+\d+/i.test(text)
+              || /^part\s+\d+/i.test(text);
+        }
+        chunks.forEach((c, i) => {
+          if (looksLikeChapter(c.trim())) {
+            chapters.push({ title: c.trim(), index: i });
+          }
+        });
+        if(chapters.length === 0) {
+          for (let i = 0; i < chunks.length; i += Math.floor(chunks.length / 10)) {
+            chapters.push({ title: `Chapter ${i + 1}`, index: i });
+          }
+        }
+      }
+      chapterList.innerHTML = '';
+      chapters.forEach(ch => {
         const li = document.createElement('li');
-        li.textContent = ch;
-        li.dataset.index = Math.floor(idx * chunks.length / chapters.length);
+        li.textContent = ch.title;
+        li.dataset.index = ch.index;
         chapterList.appendChild(li);
+      });
+
+      // Render paragraphs/book content
+      textDiv.innerHTML = '';
+      chunks.forEach((c, i) => {
+        // If chunk looks like a chapter heading, render as <h2>
+        if (/^chapter\s+\d+/i.test(c.trim()) || /^prologue$/i.test(c.trim()) || /^epilogue$/i.test(c.trim())) {
+          const h = document.createElement('h2');
+          h.textContent = c.trim();
+          h.dataset.index = i;
+          textDiv.appendChild(h);
+        } else {
+          const p = document.createElement('p');
+          p.textContent = c;
+          p.dataset.index = i;
+          textDiv.appendChild(p);
+        }
+      });
+
+      statusDiv.textContent = 'Click a chapter or paragraph to play.';
+    });
+
+    chapterList.addEventListener('click', e => {
+      if (e.target.tagName !== 'LI') return;
+      const idx = Number(e.target.dataset.index);
+      // Scroll to the nearest heading or paragraph with that index
+      const el = textDiv.querySelector(`[data-index="${idx}"]`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        startSequence(idx);
+      }
+      if (window.innerWidth < 700) closeSidebar();
+    });
+
+    textDiv.addEventListener('click', e => {
+      if (e.target.tagName !== 'P' && e.target.tagName !== 'H2') return;
+      startSequence(+e.target.dataset.index);
+    });
+
+    function fetchChunk(i) {
+      if (cache[i]) return Promise.resolve(cache[i]);
+      return fetch('/chunk', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ upload_id: uploadId, index: i })
+      })
+      .then(r => r.ok ? r.blob() : Promise.reject(r.statusText))
+      .then(blob => {
+        const url = URL.createObjectURL(blob);
+        cache[i] = url;
+        return url;
       });
     }
 
-    chunks.forEach((c, i) => {
-      const p = document.createElement('p');
-      p.textContent = c;
-      p.dataset.index = i;
-      textDiv.appendChild(p);
-    });
-
-    statusDiv.textContent = 'Click a chapter or paragraph to play.';
-  });
-
-  chapterList.addEventListener('click', e => {
-    if (e.target.tagName !== 'LI') return;
-    const idx = Number(e.target.dataset.index);
-    const p = textDiv.querySelector(`p[data-index="${idx}"]`);
-    if (p) {
-      p.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      startSequence(idx);
+    function startSequence(idx) {
+      playingSeq = true;
+      currentIdx = idx;
+      voiceLabel.textContent = voiceSelect.value || 'Jenny';
+      player.style.display = 'flex';
+      playChunk(idx);
     }
-    // On mobile, close sidebar after chapter picked
-    if (window.innerWidth < 700) closeSidebar();
-  });
 
-  textDiv.addEventListener('click', e => {
-    if (e.target.tagName !== 'P') return;
-    startSequence(+e.target.dataset.index);
-  });
+    function playChunk(i) {
+      textDiv.querySelectorAll('p, h2').forEach(p => p.classList.remove('highlight'));
+      const el = textDiv.querySelector(`[data-index="${i}"]`);
+      if (el) el.classList.add('highlight');
 
-  function fetchChunk(i) {
-    if (cache[i]) return Promise.resolve(cache[i]);
-    return fetch('/chunk', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ upload_id: uploadId, index: i })
-    })
-    .then(r => r.ok ? r.blob() : Promise.reject(r.statusText))
-    .then(blob => {
-      const url = URL.createObjectURL(blob);
-      cache[i] = url;
-      return url;
-    });
-  }
+      fetchChunk(i).then(url => {
+        audio.src = url;
+        audio.play();
+      });
+    }
 
-  function startSequence(idx) {
-    playingSeq = true;
-    currentIdx = idx;
-    voiceLabel.textContent = voiceSelect.value || 'Jenny';
-    player.style.display = 'flex';
-    playChunk(idx);
-  }
+    audio.onended = () => {
+      if (playingSeq && currentIdx + 1 < chunks.length) {
+        currentIdx++;
+        playChunk(currentIdx);
+      } else {
+        playingSeq = false;
+      }
+    };
 
-  function playChunk(i) {
-    textDiv.querySelectorAll('p').forEach(p => p.classList.remove('highlight'));
-    const p = textDiv.querySelector(`p[data-index="${i}"]`);
-    if (p) p.classList.add('highlight');
+    audio.onloadedmetadata = () => {
+      const d = Math.floor(audio.duration);
+      totTime.textContent = `${Math.floor(d/60)}:${String(d%60).padStart(2,'0')}`;
+    };
 
-    fetchChunk(i).then(url => {
-      audio.src = url;
-      audio.play();
-    });
-  }
+    audio.ontimeupdate = () => {
+      const t = Math.floor(audio.currentTime);
+      curTime.textContent = `${Math.floor(t/60)}:${String(t%60).padStart(2,'0')}`;
+      prog.value = (audio.currentTime / audio.duration) * 100 || 0;
+    };
 
-  audio.onended = () => {
-    if (playingSeq && currentIdx + 1 < chunks.length) {
-      currentIdx++;
-      playChunk(currentIdx);
-    } else {
+    prog.oninput = e => {
+      audio.currentTime = (e.target.value / 100) * audio.duration;
+    };
+
+    // PLAY/PAUSE
+    playBtn.onclick = () => {
+      if (audio.paused) audio.play();
+      else audio.pause();
+    };
+
+    // STOP
+    stopBtn.onclick = () => {
+      audio.pause();
+      audio.currentTime = 0;
       playingSeq = false;
-    }
-  };
+      textDiv.querySelectorAll('p, h2').forEach(p => p.classList.remove('highlight'));
+    };
 
-  audio.onloadedmetadata = () => {
-    const d = Math.floor(audio.duration);
-    totTime.textContent = `${Math.floor(d/60)}:${String(d%60).padStart(2,'0')}`;
-  };
+    // ⏪ BACKWARD 15s
+    rewindBtn.onclick = () => {
+      audio.currentTime = Math.max(0, audio.currentTime - 15);
+    };
 
-  audio.ontimeupdate = () => {
-    const t = Math.floor(audio.currentTime);
-    curTime.textContent = `${Math.floor(t/60)}:${String(t%60).padStart(2,'0')}`;
-    prog.value = (audio.currentTime / audio.duration) * 100 || 0;
-  };
-
-  prog.oninput = e => {
-    audio.currentTime = (e.target.value / 100) * audio.duration;
-  };
-
-  // PLAY/PAUSE
-  playBtn.onclick = () => {
-    if (audio.paused) audio.play();
-    else audio.pause();
-  };
-
-  // STOP
-  stopBtn.onclick = () => {
-    audio.pause();
-    audio.currentTime = 0;
-    playingSeq = false;
-    textDiv.querySelectorAll('p').forEach(p => p.classList.remove('highlight'));
-  };
-
-  // ⏪ BACKWARD 15s
-  rewindBtn.onclick = () => {
-    audio.currentTime = Math.max(0, audio.currentTime - 15);
-  };
-
-  // ⏩ FORWARD 15s
-  forwardBtn.onclick = () => {
-    audio.currentTime = Math.min(audio.duration, audio.currentTime + 15);
-  };
-});
-</script>
+    // ⏩ FORWARD 15s
+    forwardBtn.onclick = () => {
+      audio.currentTime = Math.min(audio.duration, audio.currentTime + 15);
+    };
+  });
+  </script>
 </body>
 </html>
