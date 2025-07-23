@@ -121,7 +121,7 @@
       padding-bottom: 6.5rem;
     }
     #textDisplay {
-      margin: 3em auto 0 auto;
+      margin: 0 auto;
       max-width: 700px;
       width: 100%;
       padding: 2em 1.5em 3em 1.5em;
@@ -134,6 +134,9 @@
       color: #ececec;
       letter-spacing: 0.01em;
       transition: all 0.2s;
+      display: block;
+      min-height: 120px;
+      height: auto;
     }
     #textDisplay h1, #textDisplay h2, #textDisplay h3 {
       font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
@@ -254,6 +257,7 @@
       <div id="status" style="font-size:0.95rem;color:#bbb;margin-left:16px;"></div>
     </div>
     <div class="main-content col-start-2 row-start-1 bg-black text-white pb-0 pr-0 pl-0 flex flex-col h-full transition-all duration-300" id="mainContent" style="margin-top:60px;">
+      <div id="textDisplay" style="display:block;flex:1 1 auto;overflow-y:auto;min-height:120px;height:auto;max-height:calc(100vh - 60px - 112px);padding:0 1.5rem;"> </div>
       <div id="searchBarContainer" style="width:100%;max-width:900px;margin:0 auto 0.5em auto;display:flex;align-items:center;gap:0.5em;padding:0.5em 0.5em 0 0.5em;position:relative;z-index:2;">
         <span style="display:inline-flex;align-items:center;justify-content:center;width:2em;height:2em;color:#aaa;font-size:1.2em;">
           <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
@@ -263,7 +267,6 @@
         <button id="searchNextBtn" title="Next match" style="background:#23232a;color:#aaa;border:none;border-radius:4px;padding:0.4em 0.7em;font-size:1em;cursor:pointer;">&#8595;</button>
         <span id="searchCount" style="color:#aaa;font-size:0.95em;margin-left:0.5em;"></span>
       </div>
-      <div id="textDisplay" style="display:block;flex:1 1 auto;overflow-y:auto;min-height:120px;height:auto;max-height:calc(100vh - 60px - 112px);padding:0 1.5rem;"> </div>
     </div>
     <div class="media-controls col-span-2 row-start-2 w-full bg-black border-t border-[#333] p-4 z-[1000] flex flex-col gap-2" id="mediaControls" style="position:sticky; bottom:0; left:0; right:0;">
       <div class="progress-container flex items-center gap-3 mb-2">
@@ -420,13 +423,13 @@
       });
       // Load and display the first chapter
       if (chapters.length > 0) {
-        loadAndDisplayChapter(chapters[0].file_name);
+        await loadAndDisplayChapter(chapters[0].file_name);
       }
-      textDiv.scrollTop = 0;
-      textDiv.style.display = 'block';
-      textDiv.style.minHeight = '120px';
+      // Ensure everything is visible and scroll to top after DOM update
       setTimeout(() => {
-        textDiv.scrollIntoView({behavior:'smooth'});
+        const mainContent = document.getElementById('mainContent');
+        if (mainContent) mainContent.scrollTop = 0;
+        window.scrollTo({ top: 0, behavior: 'instant' });
       }, 100);
     });
 
@@ -473,6 +476,16 @@
         });
         statusDiv.textContent = '';
         textDiv.scrollTop = 0;
+        // After loading, re-run search if a term is present
+        if (searchInput && searchInput.value && searchInput.value.length > 1) {
+          highlightSearch(searchInput.value);
+        }
+        // Ensure main content and viewport are scrolled to top after DOM update
+        setTimeout(() => {
+          const mainContent = document.getElementById('mainContent');
+          if (mainContent) mainContent.scrollTop = 0;
+          window.scrollTo({ top: 0, behavior: 'instant' });
+        }, 100);
       } catch (err) {
         statusDiv.textContent = 'Error loading chapter.';
       }
@@ -793,6 +806,13 @@
     const searchNextBtn = document.getElementById('searchNextBtn');
     const searchCount = document.getElementById('searchCount');
     function clearSearchHighlights() {
+      // Remove word-level highlight spans first
+      document.querySelectorAll('#textDisplay .word').forEach(el => {
+        const parent = el.parentNode;
+        parent.replaceChild(document.createTextNode(el.textContent), el);
+        parent.normalize();
+      });
+      // Remove search highlight spans
       document.querySelectorAll('#textDisplay .search-highlight').forEach(el => {
         const parent = el.parentNode;
         parent.replaceChild(document.createTextNode(el.textContent), el);
@@ -808,6 +828,7 @@
       const regex = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
       const walker = document.createTreeWalker(document.getElementById('textDisplay'), NodeFilter.SHOW_TEXT, null);
       let node;
+      let found = false;
       while ((node = walker.nextNode())) {
         if (node.parentNode && node.parentNode.closest('.search-highlight')) continue;
         let match;
@@ -826,6 +847,7 @@
           newNodes.push(span);
           searchMatches.push(span);
           lastIndex = match.index + match[0].length;
+          found = true;
         }
         if (lastIndex < text.length) {
           newNodes.push(document.createTextNode(text.slice(lastIndex)));
@@ -840,6 +862,9 @@
         updateSearchHighlight();
       }
       searchCount.textContent = searchMatches.length ? `${currentMatchIdx+1}/${searchMatches.length}` : '0/0';
+      if (!found) {
+        searchCount.textContent = 'No matches';
+      }
     }
     function updateSearchHighlight() {
       searchMatches.forEach((el, i) => {
