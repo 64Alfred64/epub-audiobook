@@ -19,9 +19,8 @@
       width: 250px;
       background: #000;
       padding: 1rem;
-      transform: translateX(-250px);
-      transition: transform 0.3s ease;
       overflow-y: auto;
+      max-height: 100vh;
       box-shadow: 2px 0 6px rgba(0,0,0,0.5);
       z-index: 1001;
       position: fixed;
@@ -311,9 +310,7 @@
 </head>
 <body>
   <div class="app-container h-screen w-screen grid grid-cols-[auto_1fr] grid-rows-[1fr_auto]">
-    <!-- Sidebar Navigation -->
-    <button class="hamburger block md:hidden fixed top-4 left-4 z-[1100] bg-[#222] text-white p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-400" aria-label="Open sidebar" id="hamburgerBtn">☰</button>
-    <div class="sidebar-overlay fixed inset-0 bg-black/60 z-[1099] hidden" id="sidebarOverlay" tabindex="-1" aria-hidden="true"></div>
+    <!-- Hamburger and sidebar overlay removed -->
     <nav class="sidebar row-span-2 h-full w-[280px] bg-black border-r border-[#333] overflow-y-auto p-5 z-[1101] transition-transform duration-300 -translate-x-full md:translate-x-0 fixed md:static top-0 left-0" id="sidebar" aria-label="Book navigation">
       <div class="sidebar-header flex items-center gap-2 mb-4 min-w-0">
         <button class="back-button control-btn" aria-label="Back to library">&lt;</button>
@@ -388,51 +385,7 @@
   <!-- Dynamic Settings Modal injected by script below -->
 
   <script>
-    // Sidebar mobile toggle logic
-    const sidebar = document.getElementById('sidebar');
-    const sidebarOverlay = document.getElementById('sidebarOverlay');
-    const hamburgerBtn = document.getElementById('hamburgerBtn');
-    function openSidebar() {
-      sidebar.classList.add('open');
-      sidebarOverlay.classList.remove('hidden');
-      hamburgerBtn.setAttribute('aria-label', 'Close sidebar');
-      document.body.style.overflow = 'hidden';
-      // Focus trap
-      sidebar.setAttribute('tabindex', '-1');
-      sidebar.focus();
-    }
-    function closeSidebar() {
-      sidebar.classList.remove('open');
-      sidebarOverlay.classList.add('hidden');
-      hamburgerBtn.setAttribute('aria-label', 'Open sidebar');
-      document.body.style.overflow = '';
-      sidebar.removeAttribute('tabindex');
-    }
-    hamburgerBtn.addEventListener('click', () => {
-      if (sidebar.classList.contains('open')) {
-        closeSidebar();
-      } else {
-        openSidebar();
-      }
-    });
-    sidebarOverlay.addEventListener('click', closeSidebar);
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && sidebar.classList.contains('open')) closeSidebar();
-    });
-    // Trap focus in sidebar when open (mobile)
-    sidebar.addEventListener('keydown', function(e) {
-      if (!sidebar.classList.contains('open')) return;
-      if (e.key === 'Tab') {
-        const focusable = sidebar.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-        const first = focusable[0];
-        const last = focusable[focusable.length - 1];
-        if (e.shiftKey) {
-          if (document.activeElement === first) { e.preventDefault(); last.focus(); }
-        } else {
-          if (document.activeElement === last) { e.preventDefault(); first.focus(); }
-        }
-      }
-    });
+    // Sidebar mobile toggle logic removed
     // EPUB logic + audio player
     const chapterList = document.getElementById('chapterList');
     const form        = document.getElementById('uploadForm');
@@ -472,45 +425,42 @@
     function renderChapterContent(chunks) {
       if (!epubContent) return;
       epubContent.innerHTML = '';
-      chunks.forEach((c, i) => {
-        const trimmed = c.trim();
-        if (/^chapter\s+\d+/i.test(trimmed) || /^prologue$/i.test(trimmed) || /^epilogue$/i.test(trimmed)) {
-          const h = document.createElement('h2');
-          h.textContent = trimmed;
+      chunks.forEach((chunk, i) => {
+        if (typeof chunk === 'string') {
+          // Fallback for legacy: treat as paragraph
+          const p = document.createElement('p');
+          p.textContent = chunk;
+          p.dataset.index = i;
+          p.tabIndex = 0;
+          p.style.cursor = 'pointer';
+          p.onclick = () => startSequence(i);
+          epubContent.appendChild(p);
+          return;
+        }
+        if (chunk.type === 'paragraph') {
+          const p = document.createElement('p');
+          p.textContent = chunk.text;
+          p.dataset.index = i;
+          p.tabIndex = 0;
+          p.style.cursor = 'pointer';
+          p.onclick = () => startSequence(i);
+          epubContent.appendChild(p);
+        } else if (chunk.type === 'heading') {
+          const h = document.createElement(chunk.tag || 'h2');
+          h.textContent = chunk.text;
           h.dataset.index = i;
+          h.tabIndex = 0;
+          h.style.cursor = 'pointer';
+          h.onclick = () => startSequence(i);
           epubContent.appendChild(h);
-        } else if (/^<img/i.test(trimmed)) {
-          // If the chunk is already an <img> tag, insert as HTML
-          const wrapper = document.createElement('div');
-          wrapper.innerHTML = trimmed;
-          const img = wrapper.querySelector('img');
-          if (img) {
-            img.classList.add('epub-img');
-            img.dataset.index = i;
-            epubContent.appendChild(img);
-          }
-        } else if (/^data:image\//.test(trimmed) || /\.(jpg|jpeg|png|gif)$/i.test(trimmed)) {
+        } else if (chunk.type === 'image') {
           const img = document.createElement('img');
-          img.src = trimmed;
-          img.alt = `Image ${i+1}`;
+          img.src = chunk.src;
+          img.alt = chunk.alt || `Image ${i+1}`;
           img.className = 'epub-img';
           img.dataset.index = i;
           epubContent.appendChild(img);
-        } else {
-          const p = document.createElement('p');
-          p.textContent = c;
-          p.dataset.index = i;
-          epubContent.appendChild(p);
         }
-      });
-      // Attach click-to-play event after rendering (remove old first)
-      epubContent.querySelectorAll('p, h2').forEach(el => {
-        el.onclick = null;
-        el.addEventListener('click', function(e) {
-          const idx = parseInt(el.dataset.index, 10);
-          if (!isNaN(idx)) startSequence(idx);
-        });
-        el.style.cursor = 'pointer';
       });
     }
 
