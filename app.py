@@ -39,7 +39,6 @@ def extract_epub_text(epub_path):
     return title_str, clean_text(text)
 
 def chunk_text(text):
-    # Split text strictly by sentences ending with .?! followed by space(s)
     sentences = re.split(r'(?<=[.?!])\s+', text)
     return [s.strip() for s in sentences if s.strip()]
 
@@ -70,12 +69,11 @@ def index():
 @app.route('/upload', methods=['POST'])
 def upload_epub():
     print("==> Upload received")
-print("request.files:", request.files)
-print("request.form:", request.form)
+    print("request.files:", request.files)
+    print("request.form:", request.form)
 
-if 'file' not in request.files:
-    return jsonify({'error': 'No file part named \"file\" in the request'}), 400
-
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part named "file" in the request'}), 400
 
     file = request.files['file']
     if file.filename == '':
@@ -113,4 +111,3 @@ def get_audio(filename):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
-
