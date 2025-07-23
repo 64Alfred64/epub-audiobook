@@ -186,90 +186,157 @@
     #audioBar {
       pointer-events: auto;
     }
+    @media (max-width: 700px) {
+      .sidebar {
+        position: fixed !important;
+        top: 0; left: 0;
+        height: 100vh;
+        width: 80vw;
+        max-width: 320px;
+        z-index: 1101;
+        background: #000;
+        border-right: 1px solid #333;
+        transform: translateX(-100%);
+        transition: transform 0.3s cubic-bezier(.4,0,.2,1);
+      }
+      .sidebar.open {
+        transform: translateX(0);
+      }
+      .sidebar-overlay {
+        display: block;
+      }
+      .main-content {
+        padding-left: 0 !important;
+      }
+    }
+    @media (min-width: 701px) {
+      .sidebar {
+        transform: none !important;
+        position: static !important;
+        width: 280px;
+        min-width: 280px;
+        max-width: 280px;
+        height: 100vh;
+        z-index: 1001;
+        background: #000;
+        border-right: 1px solid #333;
+      }
+      .sidebar-overlay {
+        display: none !important;
+      }
+      .main-content {
+        padding-left: 280px !important;
+      }
+    }
   </style>
 </head>
 <body>
-  <!-- Hamburger icon (always visible) -->
-  <button id="hamburger" aria-label="Open chapters sidebar" class="block">
-    <svg width="28" height="28" viewBox="0 0 28 28" class="mx-auto"><rect width="24" height="3" x="2" y="6" rx="1.5" fill="currentColor"/><rect width="24" height="3" x="2" y="13" rx="1.5" fill="currentColor"/><rect width="24" height="3" x="2" y="20" rx="1.5" fill="currentColor"/></svg>
-  </button>
-  <div id="sidebar">
-    <button id="sidebar-close" aria-label="Close chapters sidebar">✕</button>
-    <h2>Chapters</h2>
-    <ul id="chapterList"></ul>
-  </div>
-  <div id="sidebar-overlay"></div>
-  <div id="main">
-    <h1>EPUB Audio Reader</h1>
-    <form id="uploadForm" enctype="multipart/form-data">
-      <input type="file" name="file" accept=".epub" required/>
-      <select id="voiceSelect" name="voice">
-        <option value="">Select Voice (default: Jenny)</option>
-      </select>
-      <button type="submit">Upload EPUB</button>
-    </form>
-    <div id="status"></div>
-    <div id="textDisplay"></div>
-  </div>
-  <!-- Fixed bottom control bar -->
-  <div id="audioBar"
-    class="fixed bottom-0 left-0 right-0 w-full flex flex-row items-center justify-center gap-2 px-2 sm:px-6 py-2 z-[99999] bg-[#181818] border-t border-gray-700 shadow-[0_-2px_16px_0_rgba(0,0,0,0.25)] text-gray-100"
-    style="opacity:1; box-sizing:border-box; backdrop-filter: blur(8px);">
-    <button id="audioBarHamburger"
-      class="flex-shrink-0 mx-1 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-[#232323] focus:outline focus:ring-2 focus:ring-blue-500"
-      aria-label="Show chapters">
-      📖
-    </button>
-    <button id="rewindBtn" class="audio-btn mx-1 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-[#232323] focus:outline focus:ring-2 focus:ring-blue-500" aria-label="Rewind 15 seconds">
-      ⏪
-    </button>
-    <button id="playBtn" class="audio-btn mx-1 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-[#232323] focus:outline focus:ring-2 focus:ring-blue-500 flex items-center justify-center" aria-label="Play/Pause">
-      <span id="iconPlay" class="block text-2xl sm:text-3xl" aria-hidden="true">▶️</span>
-      <span id="iconPause" class="hidden block text-2xl sm:text-3xl" aria-hidden="true">⏸️</span>
-    </button>
-    <button id="forwardBtn" class="audio-btn mx-1 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-[#232323] focus:outline focus:ring-2 focus:ring-blue-500" aria-label="Forward 15 seconds">
-      ⏩
-    </button>
-    <div class="flex-1 flex items-center mx-2 min-w-0">
-      <span id="audioTimeCurrent" class="text-xs w-11 text-right select-none">0:00</span>
-      <input type="range" id="audioProgress" class="flex-1 mx-1 accent-blue-500" min="0" max="100" value="0" aria-label="Playback progress"/>
-      <span id="audioTimeTotal" class="text-xs w-11 text-left select-none">0:00</span>
+  <div class="app-container">
+    <button class="hamburger block md:hidden fixed top-4 left-4 z-[1100] bg-[#222] text-white p-2 rounded focus:outline-none" aria-label="Open sidebar" id="hamburgerBtn">☰</button>
+    <div class="sidebar-overlay fixed inset-0 bg-black/60 z-[1099] hidden" id="sidebarOverlay"></div>
+    <div class="sidebar fixed md:static top-0 left-0 h-full w-[280px] bg-black border-r border-[#333] overflow-y-auto p-5 z-[1101] transition-transform duration-300 -translate-x-full md:translate-x-0" id="sidebar">
+      <div class="sidebar-header flex items-center gap-2 mb-4">
+        <button class="back-button control-btn">&lt;</button>
+        <h2 class="book-title flex-1 text-lg font-bold text-white">Book Title</h2>
+        <button class="menu-button control-btn">⋯</button>
+      </div>
+      <div class="chapter-list">
+        <h3 class="text-xs font-semibold text-gray-500 mb-2">Chapters</h3>
+        <ul class="chapter-nav" id="chapterList"></ul>
+      </div>
     </div>
-    <select id="speedSelect" class="ml-1 mr-1 p-1 rounded text-sm bg-white dark:bg-[#232323] border border-gray-300 dark:border-[#282828] focus:outline focus:ring-2 focus:ring-blue-500"
-      title="Playback speed">
-      <option value="1">1x</option>
-      <option value="1.25">1.25x</option>
-      <option value="1.5">1.5x</option>
-      <option value="1.75">1.75x</option>
-      <option value="2">2x</option>
-      <option value="2.25">2.25x</option>
-      <option value="2.5">2.5x</option>
-    </select>
-    <span class="ml-1 mr-1 text-xs sm:text-base voice-label select-none">Jenny</span>
-    <button id="audioBarSettingsBtn"
-      class="ml-1 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-[#232323] focus:outline focus:ring-2 focus:ring-blue-500"
-      aria-label="Settings">
-      ⚙️
-    </button>
-    <audio id="mainAudio" preload="metadata" style="display:none"></audio>
+    <div class="main-content min-h-screen bg-black text-white pl-0 md:pl-[280px] pr-0 md:pr-0 pt-8 pb-0 transition-all duration-300" id="mainContent">
+      <form id="uploadForm" enctype="multipart/form-data" class="mb-6">
+        <input type="file" name="file" accept=".epub" required class="mb-2"/>
+        <select id="voiceSelect" name="voice" class="mb-2">
+          <option value="">Select Voice (default: Jenny)</option>
+        </select>
+        <button type="submit" class="control-btn bg-blue-700 text-white px-4 py-2 rounded">Upload EPUB</button>
+      </form>
+      <div id="status" class="mb-2"></div>
+      <div class="text-display" id="textDisplay"></div>
+    </div>
+    <div class="media-controls fixed bottom-0 left-0 right-0 w-full bg-black border-t border-[#333] p-4 z-[1000] flex flex-col gap-2" id="mediaControls">
+      <div class="progress-container flex items-center gap-3 mb-2">
+        <span class="time-current text-xs text-gray-400" id="audioTimeCurrent">00:00</span>
+        <div class="progress-bar flex-1 h-1 bg-[#333] rounded relative cursor-pointer mx-2" id="customProgressBar">
+          <div class="progress-fill bg-blue-500 h-1 rounded absolute left-0 top-0" style="width:0%"></div>
+          <div class="progress-handle w-4 h-4 bg-blue-500 rounded-full absolute top-1/2 -translate-y-1/2 left-0" style="left:0%"></div>
+        </div>
+        <span class="time-total text-xs text-gray-400" id="audioTimeTotal">00:00</span>
+      </div>
+      <div class="control-buttons flex items-center justify-between">
+        <div class="media-info flex items-center gap-3">
+          <img class="book-cover w-10 h-10 rounded object-cover bg-[#222]" src="" alt="Book cover" id="bookCover"/>
+          <div class="book-details flex flex-col">
+            <span class="book-title text-sm font-semibold text-white" id="mediaBookTitle">Book Title</span>
+            <span class="narrator text-xs text-gray-400" id="mediaNarrator">Read by Narrator</span>
+          </div>
+        </div>
+        <div class="playback-controls flex items-center gap-2">
+          <button class="control-btn skip-back" id="rewindBtn" aria-label="Rewind 15 seconds">⏮</button>
+          <button class="control-btn play-pause bg-[#333] rounded-full w-12 h-12 flex items-center justify-center text-2xl" id="playBtn" aria-label="Play/Pause">
+            <span id="iconPlay">▶️</span>
+            <span id="iconPause" class="hidden">⏸️</span>
+          </button>
+          <button class="control-btn skip-forward" id="forwardBtn" aria-label="Forward 15 seconds">⏭</button>
+          <button class="control-btn speed" id="speedSelect" aria-label="Playback speed">1x</button>
+        </div>
+        <div class="additional-controls flex items-center gap-2">
+          <button class="control-btn" id="audioBarSettingsBtn" aria-label="Settings">⚙️</button>
+        </div>
+      </div>
+      <audio id="mainAudio" preload="metadata" style="display:none"></audio>
+    </div>
   </div>
   <!-- Dynamic Settings Modal injected by script below -->
 
   <script>
-    // Hamburger always visible, both mobile and desktop
-    document.getElementById("audioBarHamburger").onclick = () => document.getElementById("hamburger").click();
-    const sidebar     = document.getElementById('sidebar');
-    const hamburger   = document.getElementById('hamburger');
-    const sidebarClose= document.getElementById('sidebar-close');
-    const overlay     = document.getElementById('sidebar-overlay');
-    hamburger.style.display = "block";
-    function openSidebar() { sidebar.classList.add('open'); hamburger.classList.add('open'); overlay.style.display = 'block'; hamburger.setAttribute('aria-label', 'Close chapters sidebar'); }
-    function closeSidebar() { sidebar.classList.remove('open'); hamburger.classList.remove('open'); overlay.style.display = 'none'; hamburger.setAttribute('aria-label', 'Open chapters sidebar'); }
-    hamburger.addEventListener('click', openSidebar);
-    sidebarClose.addEventListener('click', closeSidebar);
-    overlay.addEventListener('click', closeSidebar);
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSidebar(); });
-    window.addEventListener('resize', () => { if (window.innerWidth >= 700) { closeSidebar(); } });
+    // Sidebar mobile toggle logic
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    const hamburgerBtn = document.getElementById('hamburgerBtn');
+    function openSidebar() {
+      sidebar.classList.add('open');
+      sidebarOverlay.classList.remove('hidden');
+      hamburgerBtn.setAttribute('aria-label', 'Close sidebar');
+      document.body.style.overflow = 'hidden';
+      // Focus trap
+      sidebar.setAttribute('tabindex', '-1');
+      sidebar.focus();
+    }
+    function closeSidebar() {
+      sidebar.classList.remove('open');
+      sidebarOverlay.classList.add('hidden');
+      hamburgerBtn.setAttribute('aria-label', 'Open sidebar');
+      document.body.style.overflow = '';
+      sidebar.removeAttribute('tabindex');
+    }
+    hamburgerBtn.addEventListener('click', () => {
+      if (sidebar.classList.contains('open')) {
+        closeSidebar();
+      } else {
+        openSidebar();
+      }
+    });
+    sidebarOverlay.addEventListener('click', closeSidebar);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && sidebar.classList.contains('open')) closeSidebar();
+    });
+    // Trap focus in sidebar when open (mobile)
+    sidebar.addEventListener('keydown', function(e) {
+      if (!sidebar.classList.contains('open')) return;
+      if (e.key === 'Tab') {
+        const focusable = sidebar.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey) {
+          if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+        } else {
+          if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+        }
+      }
+    });
     // Audio bar auto-hide
     let audioBar = document.getElementById("audioBar");
     let hideBarTimeout = null;
@@ -293,12 +360,15 @@
     const playBtn     = document.getElementById('playBtn');
     const rewindBtn   = document.getElementById('rewindBtn');
     const forwardBtn  = document.getElementById('forwardBtn');
-    const stopBtn     = document.getElementById('stopBtn');
-    const speedSelect = document.getElementById('speedSelect');
-    const prog        = document.getElementById('audioProgress');
+    const speedBtn    = document.getElementById('speedSelect');
     const curTime     = document.getElementById('audioTimeCurrent');
     const totTime     = document.getElementById('audioTimeTotal');
-    const voiceLabel  = document.querySelector('.voice-label');
+    const progressBar = document.getElementById('customProgressBar');
+    const progressFill = progressBar.querySelector('.progress-fill');
+    const progressHandle = progressBar.querySelector('.progress-handle');
+    const bookCover   = document.getElementById('bookCover');
+    const mediaBookTitle = document.getElementById('mediaBookTitle');
+    const mediaNarrator = document.getElementById('mediaNarrator');
     let uploadId, chunks = [], cache = {}, currentIdx = 0, playingSeq = false;
     const voices = [
       "en-AU-NatashaNeural","en-AU-WilliamNeural",
@@ -427,15 +497,20 @@
     mainAudio.onloadedmetadata = () => {
       const d = Math.floor(mainAudio.duration);
       totTime.textContent = `${Math.floor(d/60)}:${String(d%60).padStart(2,'0')}`;
-      prog.max = mainAudio.duration || 100;
+      // prog.max = mainAudio.duration || 100; // This line is no longer needed
     };
     mainAudio.ontimeupdate = () => {
       const t = Math.floor(mainAudio.currentTime);
       curTime.textContent = `${Math.floor(t/60)}:${String(t%60).padStart(2,'0')}`;
-      prog.value = mainAudio.currentTime || 0;
+      const percent = mainAudio.duration ? (mainAudio.currentTime / mainAudio.duration) * 100 : 0;
+      progressFill.style.width = percent + '%';
+      progressHandle.style.left = percent + '%';
     };
-    prog.oninput = e => {
-      mainAudio.currentTime = (e.target.value / prog.max) * mainAudio.duration;
+    progressBar.onclick = function(e) {
+      const rect = progressBar.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const percent = Math.max(0, Math.min(1, x / rect.width));
+      mainAudio.currentTime = percent * mainAudio.duration;
     };
     // Play/Pause Toggle Button Emojis
     function setPlayPauseIcon(isPlaying) {
@@ -457,10 +532,15 @@
     forwardBtn.onclick = () => {
       mainAudio.currentTime = Math.min(mainAudio.duration, mainAudio.currentTime + 15);
     };
-    speedSelect.addEventListener('change', () => {
-      mainAudio.playbackRate = parseFloat(speedSelect.value);
+    speedBtn.addEventListener('click', () => {
+      const rates = [1, 1.25, 1.5, 1.75, 2];
+      let current = rates.indexOf(mainAudio.playbackRate);
+      current = (current + 1) % rates.length;
+      mainAudio.playbackRate = rates[current];
+      speedBtn.textContent = rates[current] + 'x';
     });
-    mainAudio.playbackRate = parseFloat(speedSelect.value);
+    mainAudio.playbackRate = 1;
+    speedBtn.textContent = '1x';
     // Keyboard accessibility for audio bar
     playBtn.onkeydown = rewindBtn.onkeydown = forwardBtn.onkeydown = function(e) {
       if (e.key === " " || e.key === "Enter") { e.preventDefault(); this.click(); }
