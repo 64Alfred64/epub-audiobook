@@ -6,44 +6,63 @@
   <title>EPUB Audio Reader</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"/>
   <style>
-    /* DARK THEME + FONT */
     body {
       font-family: 'Inter', sans-serif;
       background: #121212;
       color: #eee;
-      margin: 0; padding: 2rem;
-      display: flex; flex-direction: column; align-items: center;
+      margin: 0;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
       min-height: 100vh;
     }
-    h1 { font-weight: 700; margin-bottom: 1rem; }
-
-    /* UPLOAD FORM */
+    h1 {
+      font-weight: 700;
+      margin-bottom: 1rem;
+    }
     form {
-      background: #1f1f1f; padding: 1.5rem; border-radius: 12px;
-      max-width: 600px; width: 100%; display: flex;
-      flex-direction: column; gap: 1rem;
+      background: #1f1f1f;
+      padding: 1.5rem;
+      border-radius: 12px;
+      max-width: 600px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
       box-shadow: 0 4px 12px rgba(0,0,0,0.5);
     }
     input[type="file"], select, button {
-      font-size: 1rem; padding: 0.8rem 1rem;
-      border: none; border-radius: 8px;
+      font-size: 1rem;
+      padding: 0.8rem 1rem;
+      border: none;
+      border-radius: 8px;
     }
     input[type="file"], select {
-      background: #2a2a2a; color: #eee; cursor: pointer;
+      background: #2a2a2a;
+      color: #eee;
+      cursor: pointer;
     }
     button {
-      background: #4c8bf5; color: #fff; font-weight: 600;
-      cursor: pointer; transition: background 0.2s;
+      background: #4c8bf5;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
     }
-    button:hover { background: #3a6fe2; }
-
-    /* STATUS & TEXT DISPLAY */
-    #status { margin-top: 1rem; font-style: italic; color: #ccc; }
+    button:hover {
+      background: #3a6fe2;
+    }
+    #status {
+      margin-top: 1rem;
+      font-style: italic;
+      color: #ccc;
+    }
     #textDisplay {
-      margin-top: 2rem; max-width: 800px; width: 100%;
+      margin-top: 2rem;
+      max-width: 800px;
+      width: 100%;
     }
-
-    /* PARAGRAPH STYLING */
     #textDisplay p {
       text-indent: 1.5em;
       margin: 1em 0;
@@ -52,34 +71,42 @@
       cursor: pointer;
       position: relative;
     }
-    /* drop cap on first paragraph */
     #textDisplay p:first-of-type::first-letter {
-      float: left; font-size: 3rem; line-height: 1;
-      padding-right: 0.1em; color: #4c8bf5;
+      float: left;
+      font-size: 3rem;
+      line-height: 1;
+      padding-right: 0.1em;
+      color: #4c8bf5;
     }
-    /* highlight the active paragraph */
     .highlight {
       background: rgba(76,139,245,0.2);
       border-left: 4px solid #4c8bf5;
       padding-left: 0.5em;
     }
-
-    /* ELEVEN-LABS STYLE PLAYER */
     .eleven-player {
-      display: none; /* shown after upload */
-      align-items: center; background: #1f1f1f;
-      padding: 0.75rem 1rem; border-radius: 8px;
-      gap: 0.75rem; max-width: 600px; width: 100%;
+      display: none;
+      align-items: center;
+      background: #1f1f1f;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      gap: 0.75rem;
+      max-width: 600px;
+      width: 100%;
       box-shadow: 0 4px 12px rgba(0,0,0,0.5);
       margin-top: 2rem;
     }
     .eleven-player .play-btn {
-      width:36px; height:36px; background:#292929;
-      border:none; border-radius:50%; display:grid;
-      place-items:center; cursor:pointer; transition:background 0.2s;
+      width:36px; height:36px;
+      background:#292929;
+      border:none;
+      border-radius:50%;
+      display:grid;
+      place-items:center;
+      cursor:pointer;
+      transition:background 0.2s;
     }
     .eleven-player .play-btn:hover { background:#3a3a3a; }
-    .eleven-player .play-btn svg { width:20px; height:20px; fill:#fff }
+    .eleven-player .play-btn svg { width:20px; height:20px; fill:#fff; }
     .eleven-player .progress-group {
       flex:1; display:flex; align-items:center; gap:0.5rem;
     }
@@ -105,16 +132,14 @@
     }
     .eleven-player .voice-label {
       font-size:0.85rem; color:#ccc;
-      background:#292929; padding:0.25rem 0.5rem;
-      border-radius:4px;
+      background:#292929; padding:0.25rem 0.5rem; border-radius:4px;
     }
   </style>
 </head>
 <body>
-
   <h1>EPUB Audio Reader</h1>
 
-  <form id="uploadForm">
+  <form id="uploadForm" enctype="multipart/form-data">
     <input type="file" name="file" accept=".epub" required/>
     <select id="voiceSelect" name="voice">
       <option value="">Select Voice (default: Jenny)</option>
@@ -125,7 +150,6 @@
   <div id="status"></div>
   <div id="textDisplay"></div>
 
-  <!-- Eleven-Labs–Style Player -->
   <div class="eleven-player">
     <button class="play-btn" aria-label="Play/Pause">
       <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
@@ -140,148 +164,162 @@
   </div>
 
   <script>
-  // VOICE DROPDOWN
-  const voices = [
-    "en-AU-NatashaNeural","en-AU-WilliamNeural",
-    "en-CA-ClaraNeural","en-CA-LiamNeural",
-    "en-GB-LibbyNeural","en-GB-RyanNeural","en-GB-SoniaNeural",
-    "en-IN-NeerjaNeural","en-IN-PriyaNeural",
-    "en-US-AriaNeural","en-US-GuyNeural","en-US-JennyNeural",
-    "en-US-MichelleNeural","en-US-TonyNeural"
-  ];
-  const voiceSelect = document.getElementById('voiceSelect');
-  voices.forEach(v=>{
-    const o=document.createElement('option');
-    o.value=v; o.textContent=v;
-    voiceSelect.appendChild(o);
-  });
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('🚀 DOM loaded, initializing script…');
 
-  // APP STATE
-  let uploadId, chunks = [], cache = {}, currentIdx=0, playingSeq=false;
-  const form       = document.getElementById('uploadForm');
-  const statusDiv  = document.getElementById('status');
-  const textDiv    = document.getElementById('textDisplay');
-  const player     = document.querySelector('.eleven-player');
-  const playBtn    = player.querySelector('.play-btn');
-  const prog       = player.querySelector('.progress');
-  const curTime    = player.querySelector('.current');
-  const totTime    = player.querySelector('.total');
-  const speedBtn   = player.querySelector('.speed-btn');
-  const voiceLabel = player.querySelector('.voice-label');
+      // populate voice dropdown
+      const voices = [
+        "en-AU-NatashaNeural","en-AU-WilliamNeural",
+        "en-CA-ClaraNeural","en-CA-LiamNeural",
+        "en-GB-LibbyNeural","en-GB-RyanNeural","en-GB-SoniaNeural",
+        "en-IN-NeerjaNeural","en-IN-PriyaNeural",
+        "en-US-AriaNeural","en-US-GuyNeural","en-US-JennyNeural",
+        "en-US-MichelleNeural","en-US-TonyNeural"
+      ];
+      const voiceSelect = document.getElementById('voiceSelect');
+      voices.forEach(v => {
+        const o = document.createElement('option');
+        o.value = v; o.textContent = v;
+        voiceSelect.appendChild(o);
+      });
 
-  // HTML5 Audio
-  const audio = new Audio();
-  audio.preload = 'metadata';
+      // grab elements
+      const form       = document.getElementById('uploadForm');
+      const statusDiv  = document.getElementById('status');
+      const textDiv    = document.getElementById('textDisplay');
+      const player     = document.querySelector('.eleven-player');
+      const playBtn    = player.querySelector('.play-btn');
+      const prog       = player.querySelector('.progress');
+      const curTime    = player.querySelector('.current');
+      const totTime    = player.querySelector('.total');
+      const speedBtn   = player.querySelector('.speed-btn');
+      const voiceLabel = player.querySelector('.voice-label');
 
-  // UPLOAD => EXTRACT + RENDER PARAGRAPHS
-  form.addEventListener('submit', async e=>{
-    e.preventDefault();
-    statusDiv.textContent = 'Extracting text…';
-    textDiv.innerHTML = '';
-    player.style.display = 'none';
-    cache = {};
-    const fd = new FormData(form);
-    const res = await fetch('/upload',{method:'POST',body:fd});
-    if(!res.ok){
-      statusDiv.textContent = `Error: ${await res.text()}`;
-      return;
-    }
-    const data = await res.json();
-    uploadId = data.upload_id;
-    chunks = data.text_chunks;
-    statusDiv.textContent = 'Click any paragraph to start reading.';
-    chunks.forEach((c,i)=>{
-      const p = document.createElement('p');
-      p.textContent = c;
-      p.dataset.index = i;
-      textDiv.appendChild(p);
+      console.log('Form:', form, 'Status:', statusDiv, 'TextDiv:', textDiv);
+
+      let uploadId, chunks = [], cache = {}, currentIdx = 0, playingSeq = false;
+      const audio = new Audio();
+      audio.preload = 'metadata';
+
+      form.addEventListener('submit', async e => {
+        e.preventDefault();
+        console.log('📤 Submit clicked');
+        statusDiv.textContent = 'Extracting text…';
+        textDiv.innerHTML = '';
+        player.style.display = 'none';
+        cache = {};
+
+        const fd = new FormData(form);
+        console.log('FormData keys:', [...fd.keys()]);
+
+        let res;
+        try {
+          res = await fetch('/upload', { method:'POST', body: fd });
+        } catch (err) {
+          console.error('✋ Fetch failed', err);
+          statusDiv.textContent = 'Network error';
+          return;
+        }
+
+        if (!res.ok) {
+          const msg = await res.text();
+          console.warn('⚠️ Upload error:', msg);
+          statusDiv.textContent = `Error: ${msg}`;
+          return;
+        }
+
+        const data = await res.json();
+        console.log('✅ /upload response:', data);
+        uploadId = data.upload_id;
+        chunks   = data.text_chunks;
+        statusDiv.textContent = 'Click any paragraph to start reading.';
+
+        chunks.forEach((c, i) => {
+          const p = document.createElement('p');
+          p.textContent = c;
+          p.dataset.index = i;
+          textDiv.appendChild(p);
+        });
+      });
+
+      textDiv.addEventListener('click', e => {
+        if (e.target.tagName !== 'P') return;
+        startSequence(+e.target.dataset.index);
+      });
+
+      function fetchChunk(i) {
+        if (cache[i]) return Promise.resolve(cache[i]);
+        return fetch('/chunk', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ upload_id: uploadId, index: i })
+        })
+        .then(r => r.ok ? r.blob() : Promise.reject(r.statusText))
+        .then(blob => {
+          const url = URL.createObjectURL(blob);
+          cache[i] = url;
+          return url;
+        });
+      }
+
+      function startSequence(idx) {
+        playingSeq  = true;
+        currentIdx  = idx;
+        voiceLabel.textContent = voiceSelect.value || 'Jenny';
+        player.style.display = 'flex';
+        playChunk(idx);
+      }
+
+      function playChunk(i) {
+        textDiv.querySelectorAll('p').forEach(p => p.classList.remove('highlight'));
+        const p = textDiv.querySelector(`p[data-index="${i}"]`);
+        if (p) p.classList.add('highlight');
+        fetchChunk(i).then(url => {
+          audio.src = url;
+          audio.play();
+        });
+      }
+
+      audio.onended = () => {
+        if (playingSeq && currentIdx + 1 < chunks.length) {
+          currentIdx++;
+          playChunk(currentIdx);
+        } else {
+          playingSeq = false;
+        }
+      };
+
+      audio.onloadedmetadata = () => {
+        const d = Math.floor(audio.duration);
+        totTime.textContent = `${Math.floor(d/60)}:${String(d%60).padStart(2,'0')}`;
+      };
+
+      audio.ontimeupdate = () => {
+        const t = Math.floor(audio.currentTime);
+        curTime.textContent = `${Math.floor(t/60)}:${String(t%60).padStart(2,'0')}`;
+        prog.value = (audio.currentTime / audio.duration) * 100 || 0;
+      };
+
+      prog.oninput = e => {
+        audio.currentTime = (e.target.value / 100) * audio.duration;
+      };
+
+      playBtn.onclick = () => {
+        if (audio.paused) audio.play(); else audio.pause();
+        const path = audio.paused
+          ? 'M8 5v14l11-7z'
+          : 'M6 5h4v14H6zm8 0h4v14h-4z';
+        playBtn.querySelector('path').setAttribute('d', path);
+      };
+
+      const speeds = [1,1.25,1.5,2];
+      let si = 0;
+      speedBtn.onclick = () => {
+        si = (si + 1) % speeds.length;
+        audio.playbackRate = speeds[si];
+        speedBtn.textContent = speeds[si] + '×';
+      };
     });
-  });
-
-  // CLICK PARA => BEGIN CONTINUOUS PLAYBACK
-  textDiv.addEventListener('click', e=>{
-    if(e.target.tagName !== 'P') return;
-    startSequence(+e.target.dataset.index);
-  });
-
-  // FETCH & CACHE A CHUNK
-  function fetchChunk(i){
-    if(cache[i]) return Promise.resolve(cache[i]);
-    return fetch('/chunk',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({upload_id:uploadId,index:i})
-    })
-    .then(r=>r.ok? r.blob(): Promise.reject(r.statusText))
-    .then(blob=>{
-      const url = URL.createObjectURL(blob);
-      cache[i] = url;
-      return url;
-    });
-  }
-
-  // PLAY FROM INDEX, CHAIN INTO NEXT
-  function startSequence(idx){
-    playingSeq = true;
-    currentIdx = idx;
-    voiceLabel.textContent = voiceSelect.value||'Jenny';
-    player.style.display = 'flex';
-    playChunk(idx);
-  }
-
-  function playChunk(i){
-    // highlight
-    textDiv.querySelectorAll('p').forEach(p=>p.classList.remove('highlight'));
-    const p = textDiv.querySelector(`p[data-index="${i}"]`);
-    if(p) p.classList.add('highlight');
-    // load + play
-    fetchChunk(i).then(url=>{
-      audio.src = url;
-      audio.play();
-      // set up times
-    });
-  }
-
-  // CHAIN NEXT CHUNK ON END
-  audio.onended = ()=>{
-    if(playingSeq && currentIdx+1 < chunks.length){
-      currentIdx++;
-      playChunk(currentIdx);
-    } else {
-      playingSeq = false;
-    }
-  };
-
-  // UPDATE PLAYER TIMES & PROGRESS (per-chunk)
-  audio.onloadedmetadata = ()=>{
-    const d = Math.floor(audio.duration);
-    totTime.textContent = `${Math.floor(d/60)}:${String(d%60).padStart(2,'0')}`;
-  };
-  audio.ontimeupdate = ()=>{
-    const t = Math.floor(audio.currentTime);
-    curTime.textContent = `${Math.floor(t/60)}:${String(t%60).padStart(2,'0')}`;
-    prog.value = (audio.currentTime / audio.duration)*100 || 0;
-  };
-  prog.oninput = e=>{
-    audio.currentTime = (e.target.value/100)*audio.duration;
-  };
-
-  // PLAY/PAUSE BUTTON
-  playBtn.onclick = ()=>{
-    if(audio.paused) audio.play(); else audio.pause();
-    const path = audio.paused
-      ? 'M8 5v14l11-7z'
-      : 'M6 5h4v14H6zm8 0h4v14h-4z';
-    playBtn.querySelector('path').setAttribute('d', path);
-  };
-
-  // SPEED CYCLE
-  const speeds=[1,1.25,1.5,2]; let si=0;
-  speedBtn.onclick = ()=>{
-    si=(si+1)%speeds.length;
-    audio.playbackRate = speeds[si];
-    speedBtn.textContent = speeds[si]+'×';
-  };
   </script>
 </body>
 </html>
