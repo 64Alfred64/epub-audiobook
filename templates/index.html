@@ -212,22 +212,22 @@
   </div>
   <!-- Fixed bottom control bar -->
   <div id="audioBar"
-    class="fixed bottom-0 left-0 w-full flex items-center justify-between gap-1 px-1 sm:px-6 py-1 z-[2000] transition-opacity duration-300 bg-white/80 dark:bg-[#181818]/90 backdrop-blur border-t border-gray-200 dark:border-[#282828] shadow-xl text-gray-800 dark:text-gray-100"
+    class="fixed bottom-0 left-0 w-full flex flex-row items-center justify-center gap-2 px-2 sm:px-6 py-2 z-[2000] transition-opacity duration-300 bg-white/80 dark:bg-[#181818]/90 backdrop-blur border-t border-gray-200 dark:border-[#282828] shadow-xl text-gray-800 dark:text-gray-100"
     style="opacity:1;">
     <button id="audioBarHamburger"
       class="flex-shrink-0 mx-1 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-[#232323] focus:outline focus:ring-2 focus:ring-blue-500"
       aria-label="Show chapters">
-      <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" class="block"><rect width="20" height="2" x="2" y="6" rx="1" fill="currentColor"/><rect width="20" height="2" x="2" y="11" rx="1" fill="currentColor"/><rect width="20" height="2" x="2" y="16" rx="1" fill="currentColor"/></svg>
+      📖
     </button>
     <button id="rewindBtn" class="audio-btn mx-1 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-[#232323] focus:outline focus:ring-2 focus:ring-blue-500" aria-label="Rewind 15 seconds">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 sm:h-8 sm:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M11 18l-7-6 7-6v12zm1-12v12c5 0 8-3 8-6s-3-6-8-6z" stroke="currentColor" stroke-width="2" fill="currentColor"/></svg>
+      ⏪
     </button>
-    <button id="playBtn" class="audio-btn mx-1 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-[#232323] focus:outline focus:ring-2 focus:ring-blue-500" aria-label="Play/Pause">
-      <svg id="iconPlay" xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 sm:h-9 sm:w-9" fill="none" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21" fill="currentColor"/></svg>
-      <svg id="iconPause" xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 sm:h-9 sm:w-9 hidden" fill="none" viewBox="0 0 24 24"><rect x="5" y="3" width="5" height="18" fill="currentColor"/><rect x="14" y="3" width="5" height="18" fill="currentColor"/></svg>
+    <button id="playBtn" class="audio-btn mx-1 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-[#232323] focus:outline focus:ring-2 focus:ring-blue-500 flex items-center justify-center" aria-label="Play/Pause">
+      <span id="iconPlay" class="block text-2xl sm:text-3xl" aria-hidden="true">▶️</span>
+      <span id="iconPause" class="hidden block text-2xl sm:text-3xl" aria-hidden="true">⏸️</span>
     </button>
     <button id="forwardBtn" class="audio-btn mx-1 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-[#232323] focus:outline focus:ring-2 focus:ring-blue-500" aria-label="Forward 15 seconds">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 sm:h-8 sm:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M13 6v12l7-6-7-6zm-1 12V6C7 6 4 9 4 12s3 6 8 6z" stroke="currentColor" stroke-width="2" fill="currentColor"/></svg>
+      ⏩
     </button>
     <div class="flex-1 flex items-center mx-2 min-w-0">
       <span id="audioTimeCurrent" class="text-xs w-11 text-right select-none">0:00</span>
@@ -248,9 +248,7 @@
     <button id="audioBarSettingsBtn"
       class="ml-1 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-[#232323] focus:outline focus:ring-2 focus:ring-blue-500"
       aria-label="Settings">
-      <svg class="h-6 w-6 sm:h-7 sm:w-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <path d="M12 8a4 4 0 100 8 4 4 0 000-8zm10 4a2 2 0 00-2-2h-1.26a8.12 8.12 0 00-.46-1.14l.89-.89a2 2 0 00-2.83-2.83l-.89.89A8.12 8.12 0 0014 5.26V4a2 2 0 00-2-2 2 2 0 00-2 2v1.26a8.12 8.12 0 00-1.14.46l-.89-.89a2 2 0 00-2.83 2.83l.89.89A8.12 8.12 0 005.26 10H4a2 2 0 000 4h1.26a8.12 8.12 0 00.46 1.14l-.89.89a2 2 0 002.83 2.83l.89-.89A8.12 8.12 0 0010 18.74V20a2 2 0 004 0v-1.26a8.12 8.12 0 001.14-.46l.89.89a2 2 0 002.83-2.83l-.89-.89A8.12 8.12 0 0018.74 14H20a2 2 0 002-2z"/>
-      </svg>
+      ⚙️
     </button>
     <audio id="mainAudio" preload="metadata" style="display:none"></audio>
   </div>
@@ -438,7 +436,7 @@
     prog.oninput = e => {
       mainAudio.currentTime = (e.target.value / prog.max) * mainAudio.duration;
     };
-    // Play/Pause Toggle Button SVGs
+    // Play/Pause Toggle Button Emojis
     function setPlayPauseIcon(isPlaying) {
       document.getElementById('iconPlay').style.display = isPlaying ? "none" : "";
       document.getElementById('iconPause').style.display = isPlaying ? "" : "none";
