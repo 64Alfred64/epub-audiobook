@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>EPUB Audio Reader</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"/>
-  <!-- Tailwind CDN -->
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css" rel="stylesheet">
   <style>
     body {
@@ -121,19 +120,6 @@
       transition: margin 0.3s;
       width: 100vw;
     }
-    @media (min-width: 700px) {
-      #sidebar {
-        position: static;
-        transform: none;
-        width: 250px;
-        height: 100vh;
-        z-index: 100;
-      }
-      #main {
-        margin-left: 250px;
-        width: calc(100vw - 250px);
-      }
-    }
     #textDisplay {
       margin: 3em auto 0 auto;
       max-width: 700px;
@@ -179,22 +165,32 @@
         max-width: 100vw;
         border-radius: 0;
       }
-    }
-    .eleven-player { display: none !important; }
-    /* For bottom bar padding (make room so it's not covered) */
-    #main {
-      padding-bottom: 4.5rem;
-    }
-    @media (max-width: 700px) {
       #main {
         padding-bottom: 4.5rem;
       }
     }
+    @media (min-width: 700px) {
+      #main {
+        margin-left: 250px;
+        width: calc(100vw - 250px);
+        padding-bottom: 4.5rem;
+      }
+      #sidebar {
+        position: static;
+        transform: none;
+        width: 250px;
+        height: 100vh;
+        z-index: 100;
+      }
+    }
+    .eleven-player { display: none !important; }
   </style>
 </head>
 <body>
-  <!-- Hamburger icon on all screen sizes! -->
-  <button id="hamburger" aria-label="Open chapters sidebar" class="block"><svg width="28" height="28" viewBox="0 0 28 28" class="mx-auto"><rect width="24" height="3" x="2" y="6" rx="1.5" fill="currentColor"/><rect width="24" height="3" x="2" y="13" rx="1.5" fill="currentColor"/><rect width="24" height="3" x="2" y="20" rx="1.5" fill="currentColor"/></svg></button>
+  <!-- Hamburger icon (always visible) -->
+  <button id="hamburger" aria-label="Open chapters sidebar" class="block">
+    <svg width="28" height="28" viewBox="0 0 28 28" class="mx-auto"><rect width="24" height="3" x="2" y="6" rx="1.5" fill="currentColor"/><rect width="24" height="3" x="2" y="13" rx="1.5" fill="currentColor"/><rect width="24" height="3" x="2" y="20" rx="1.5" fill="currentColor"/></svg>
+  </button>
   <div id="sidebar">
     <button id="sidebar-close" aria-label="Close chapters sidebar">✕</button>
     <h2>Chapters</h2>
@@ -213,9 +209,8 @@
     <div id="status"></div>
     <div id="textDisplay"></div>
   </div>
-
-  <!-- Settings Panel (React-style, but now fully working) -->
-  <div id="settingsOverlay" class="hidden fixed inset-0 z-[9999] bg-black/30 flex items-center justify-center" style="backdrop-filter: blur(2px);">
+  <!-- Settings Panel Modal -->
+  <div id="settingsOverlay" class="hidden fixed inset-0 z-[9999] bg-black/40 flex items-center justify-center" style="backdrop-filter: blur(2px);">
     <div id="settingsPanelModal" class="w-full max-w-md mx-auto rounded-2xl shadow-2xl bg-white/95 backdrop-blur-lg border border-gray-100 p-0 overflow-hidden font-sans relative">
       <button
         type="button"
@@ -229,7 +224,6 @@
         </h2>
       </header>
       <main class="p-6 space-y-7">
-        <!-- Live Preview -->
         <section id="settingsPreview"
           class="rounded-xl transition-all duration-200 shadow-inner px-6 py-4 border bg-white text-gray-900 font-serif"
           style="font-size:1.1em;line-height:1.75;letter-spacing:0em;word-spacing:0em;margin:1.5em;text-align:justify;">
@@ -288,15 +282,13 @@
       </main>
     </div>
   </div>
-  <!-- Fixed bottom audio bar -->
+  <!-- Fixed bottom control bar -->
   <div id="audioBar"
-       class="fixed bottom-0 left-0 w-full flex items-center justify-between gap-1 px-2 sm:px-6 py-2 z-[2000] transition-opacity duration-300 bg-white/80 dark:bg-[#181818]/90 backdrop-blur border-t border-gray-200 dark:border-[#282828] shadow-xl
-       text-gray-800 dark:text-gray-100
-       "
-       style="opacity:1;">
-    <!-- Hamburger for chapters (also here for desktop) -->
+    class="fixed bottom-0 left-0 w-full flex items-center justify-between gap-1 px-1 sm:px-6 py-1 z-[2000] transition-opacity duration-300 bg-white/80 dark:bg-[#181818]/90 backdrop-blur border-t border-gray-200 dark:border-[#282828] shadow-xl text-gray-800 dark:text-gray-100"
+    style="opacity:1;">
+    <!-- Hamburger for chapters (left side) -->
     <button id="audioBarHamburger"
-      class="flex-shrink-0 mr-2 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-[#232323] focus:outline focus:ring-2 focus:ring-blue-500"
+      class="flex-shrink-0 mx-1 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-[#232323] focus:outline focus:ring-2 focus:ring-blue-500"
       aria-label="Show chapters">
       <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" class="block"><rect width="20" height="2" x="2" y="6" rx="1" fill="currentColor"/><rect width="20" height="2" x="2" y="11" rx="1" fill="currentColor"/><rect width="20" height="2" x="2" y="16" rx="1" fill="currentColor"/></svg>
     </button>
@@ -330,9 +322,8 @@
       <option value="2.25">2.25x</option>
       <option value="2.5">2.5x</option>
     </select>
-    <!-- Voice label -->
     <span class="ml-1 mr-1 text-xs sm:text-base voice-label select-none">Jenny</span>
-    <!-- Settings button (moved here) -->
+    <!-- Settings button (right) -->
     <button id="audioBarSettingsBtn"
       class="ml-1 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-[#232323] focus:outline focus:ring-2 focus:ring-blue-500"
       aria-label="Settings">
@@ -340,12 +331,10 @@
         <path d="M12 8a4 4 0 100 8 4 4 0 000-8zm10 4a2 2 0 00-2-2h-1.26a8.12 8.12 0 00-.46-1.14l.89-.89a2 2 0 00-2.83-2.83l-.89.89A8.12 8.12 0 0014 5.26V4a2 2 0 00-2-2 2 2 0 00-2 2v1.26a8.12 8.12 0 00-1.14.46l-.89-.89a2 2 0 00-2.83 2.83l.89.89A8.12 8.12 0 005.26 10H4a2 2 0 000 4h1.26a8.12 8.12 0 00.46 1.14l-.89.89a2 2 0 002.83 2.83l.89-.89A8.12 8.12 0 0010 18.74V20a2 2 0 004 0v-1.26a8.12 8.12 0 001.14-.46l.89.89a2 2 0 002.83-2.83l-.89-.89A8.12 8.12 0 0018.74 14H20a2 2 0 002-2z"/>
       </svg>
     </button>
-    <!-- Hidden audio element -->
     <audio id="mainAudio" preload="metadata" style="display:none"></audio>
   </div>
   <script>
-    // ===== Settings Panel Modal (vanilla JS, works like React) =====
-    // (Theme logic and preview)
+    // ===== Settings Panel Modal logic =====
     const THEMES = [
       {
         name: "Normal",
@@ -425,10 +414,15 @@
       settingsEls.overlay.classList.remove("hidden");
       updatePanel();
       document.body.style.overflow = "hidden";
+      setTimeout(()=>{
+        settingsEls.modal.focus();
+      },25);
     }
     function closeSettingsPanel() {
       settingsEls.overlay.classList.add("hidden");
       document.body.style.overflow = "";
+      // Remove focus from settings panel to avoid accidental keydown
+      document.activeElement.blur();
     }
     window.closeSettingsPanel = closeSettingsPanel;
     // Open from audio bar settings button!
@@ -445,6 +439,8 @@
         closeSettingsPanel();
       }
     });
+    // Trap focus in the modal (basic, optional for a11y)
+    settingsEls.modal.tabIndex = -1;
     // Build theme buttons
     settingsEls.themeGroup.innerHTML = "";
     THEMES.forEach((t, idx) => {
@@ -536,7 +532,6 @@
       }
     }
     updatePanel();
-
     // ===== Fixed bottom audio bar logic (auto-hide, keyboard accessibility, mobile responsive) =====
     let audioBar = document.getElementById("audioBar");
     let hideBarTimeout = null;
@@ -563,13 +558,10 @@
     audioBar.addEventListener("mouseleave", showAudioBar);
     // Initial show
     showAudioBar();
-
-    // ===== Hamburger always visible on all screen sizes (for chapter sidebar) =====
-    // Also add hamburger in bottom bar for desktop nav
+    // Hamburger always visible (chapter sidebar)
     document.getElementById("audioBarHamburger").onclick = () =>
       document.getElementById("hamburger").click();
-
-    // ===== Old hamburger logic (chapter sidebar) =====
+    // Hamburger logic (chapter sidebar)
     const sidebar     = document.getElementById('sidebar');
     const hamburger   = document.getElementById('hamburger');
     const sidebarClose= document.getElementById('sidebar-close');
@@ -598,8 +590,7 @@
         closeSidebar();
       }
     });
-
-    // ===== EPUB logic + audio player =====
+    // EPUB logic + audio player
     const chapterList = document.getElementById('chapterList');
     const form        = document.getElementById('uploadForm');
     const textDiv     = document.getElementById('textDisplay');
@@ -616,7 +607,6 @@
     const totTime     = document.getElementById('audioTimeTotal');
     const voiceLabel  = document.querySelector('.voice-label');
     let uploadId, chunks = [], cache = {}, currentIdx = 0, playingSeq = false;
-
     const voices = [
       "en-AU-NatashaNeural","en-AU-WilliamNeural",
       "en-CA-ClaraNeural","en-CA-LiamNeural",
@@ -631,14 +621,12 @@
       o.textContent = v;
       voiceSelect.appendChild(o);
     });
-
     form.addEventListener('submit', async e => {
       e.preventDefault();
       statusDiv.textContent = 'Extracting text…';
       textDiv.innerHTML = '';
       chapterList.innerHTML = '';
       cache = {};
-
       const fd = new FormData(form);
       const res = await fetch('/upload', { method:'POST', body: fd });
       if (!res.ok) {
@@ -648,7 +636,6 @@
       const data = await res.json();
       uploadId = data.upload_id;
       chunks   = data.text_chunks;
-
       let chapters = data.chapters || [];
       if (!chapters || chapters.length === 0) {
         chapters = [];
@@ -677,7 +664,6 @@
         li.dataset.index = ch.index;
         chapterList.appendChild(li);
       });
-
       textDiv.innerHTML = '';
       chunks.forEach((c, i) => {
         if (/^chapter\s+\d+/i.test(c.trim()) || /^prologue$/i.test(c.trim()) || /^epilogue$/i.test(c.trim())) {
@@ -692,10 +678,8 @@
           textDiv.appendChild(p);
         }
       });
-
       statusDiv.textContent = 'Click a chapter or paragraph to play.';
     });
-
     chapterList.addEventListener('click', e => {
       if (e.target.tagName !== 'LI') return;
       const idx = Number(e.target.dataset.index);
@@ -706,12 +690,10 @@
       }
       if (window.innerWidth < 700) closeSidebar();
     });
-
     textDiv.addEventListener('click', e => {
       if (e.target.tagName !== 'P' && e.target.tagName !== 'H2') return;
       startSequence(+e.target.dataset.index);
     });
-
     function fetchChunk(i) {
       if (cache[i]) return Promise.resolve(cache[i]);
       return fetch('/chunk', {
@@ -726,14 +708,12 @@
         return url;
       });
     }
-
     function startSequence(idx) {
       playingSeq = true;
       currentIdx = idx;
       voiceLabel.textContent = voiceSelect.value || 'Jenny';
       playChunk(idx);
     }
-
     function playChunk(i) {
       textDiv.querySelectorAll('p, h2').forEach(p => p.classList.remove('highlight'));
       const el = textDiv.querySelector(`[data-index="${i}"]`);
@@ -743,7 +723,6 @@
         mainAudio.play();
       });
     }
-
     mainAudio.onended = () => {
       if (playingSeq && currentIdx + 1 < chunks.length) {
         currentIdx++;
@@ -765,7 +744,6 @@
     prog.oninput = e => {
       mainAudio.currentTime = (e.target.value / prog.max) * mainAudio.duration;
     };
-
     // Play/Pause Toggle Button SVGs
     function setPlayPauseIcon(isPlaying) {
       document.getElementById('iconPlay').style.display = isPlaying ? "none" : "";
@@ -773,7 +751,6 @@
     }
     mainAudio.onplay = () => setPlayPauseIcon(true);
     mainAudio.onpause = () => setPlayPauseIcon(false);
-
     playBtn.onclick = () => {
       if (mainAudio.paused) {
         mainAudio.play();
@@ -791,7 +768,6 @@
       mainAudio.playbackRate = parseFloat(speedSelect.value);
     });
     mainAudio.playbackRate = parseFloat(speedSelect.value);
-
     // Keyboard accessibility for audio bar
     playBtn.onkeydown = rewindBtn.onkeydown = forwardBtn.onkeydown = function(e) {
       if (e.key === " " || e.key === "Enter") { e.preventDefault(); this.click(); }
@@ -804,7 +780,6 @@
       if (e.key === "ArrowLeft") rewindBtn.click();
       if (e.key === "ArrowRight") forwardBtn.click();
     });
-
     // Mobile bar sizing
     function adjustAudioBarForMobile() {
       if(window.innerWidth < 700) {
