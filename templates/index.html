@@ -467,7 +467,7 @@
       setTimeout(() => {
         textDiv.scrollTop = 0;
         const firstP = textDiv.querySelector('p, h2, img');
-        if (firstP) firstP.scrollIntoView({behavior:'smooth', block:'start'});
+        if (firstP) scrollElementIntoContainer(firstP, textDiv);
       }, 100);
     });
     chapterList.addEventListener('click', e => {
@@ -519,7 +519,7 @@
       const el = textDiv.querySelector(`[data-index="${i}"]`);
       if (el) {
         el.classList.add('highlight');
-        el.scrollIntoView({behavior:'smooth', block:'center'});
+        scrollElementIntoContainer(el, textDiv);
         // Word-level highlight for <p> only
         if (el.tagName === 'P') {
           const words = el.textContent.split(/(\s+)/);
@@ -854,6 +854,17 @@
       currentMatchIdx = (currentMatchIdx + 1) % searchMatches.length;
       updateSearchHighlight();
     });
+    // Helper: scroll an element into a container (not the whole page)
+    function scrollElementIntoContainer(element, container) {
+      if (!element || !container) return;
+      const elRect = element.getBoundingClientRect();
+      const contRect = container.getBoundingClientRect();
+      if (elRect.top < contRect.top) {
+        container.scrollTop -= (contRect.top - elRect.top) + 16;
+      } else if (elRect.bottom > contRect.bottom) {
+        container.scrollTop += (elRect.bottom - contRect.bottom) + 16;
+      }
+    }
   </script>
 </body>
 </html>
