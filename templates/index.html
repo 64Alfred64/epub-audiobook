@@ -438,6 +438,12 @@
         }
       });
       statusDiv.textContent = 'Click a chapter or paragraph to play.';
+      // Scroll text area into view and show first paragraph
+      setTimeout(() => {
+        textDiv.scrollTop = 0;
+        const firstP = textDiv.querySelector('p, h2, img');
+        if (firstP) firstP.scrollIntoView({behavior:'smooth', block:'start'});
+      }, 100);
     });
     chapterList.addEventListener('click', e => {
       if (e.target.tagName !== 'LI') return;
@@ -473,13 +479,56 @@
       mediaNarrator.textContent = (voiceSelect.value ? `Read by ${voiceSelect.value}` : 'Read by Jenny');
       playChunk(idx);
     }
+    // Word-level highlighting (best effort)
+    let wordTimer = null;
     function playChunk(i) {
-      textDiv.querySelectorAll('p, h2').forEach(p => p.classList.remove('highlight'));
+      // Remove previous highlights
+      textDiv.querySelectorAll('p, h2').forEach(p => {
+        p.classList.remove('highlight');
+        // Remove word highlight spans if present
+        if (p.dataset.wordsplit === '1') {
+          p.innerHTML = p.textContent;
+          p.dataset.wordsplit = '';
+        }
+      });
       const el = textDiv.querySelector(`[data-index="${i}"]`);
-      if (el) el.classList.add('highlight');
+      if (el) {
+        el.classList.add('highlight');
+        el.scrollIntoView({behavior:'smooth', block:'center'});
+        // Word-level highlight for <p> only
+        if (el.tagName === 'P') {
+          const words = el.textContent.split(/(\s+)/);
+          el.innerHTML = words.map((w, idx) => `<span class="word" data-word-idx="${idx}">${w}</span>`).join('');
+          el.dataset.wordsplit = '1';
+        }
+      }
+      // Clear previous word timer
+      if (wordTimer) clearInterval(wordTimer);
       fetchChunk(i).then(url => {
         mainAudio.src = url;
         mainAudio.play();
+        // Word-level highlight: best effort (split duration by word count)
+        if (el && el.tagName === 'P') {
+          mainAudio.onloadedmetadata = () => {
+            const duration = mainAudio.duration || 1;
+            const wordSpans = el.querySelectorAll('.word');
+            let idx = 0;
+            function highlightWord() {
+              wordSpans.forEach((w, j) => w.style.background = j === idx ? 'rgba(76,139,245,0.3)' : '');
+            }
+            highlightWord();
+            if (wordTimer) clearInterval(wordTimer);
+            wordTimer = setInterval(() => {
+              idx++;
+              if (idx >= wordSpans.length) {
+                clearInterval(wordTimer);
+                return;
+              }
+              highlightWord();
+            }, (duration * 1000) / wordSpans.length);
+            mainAudio.onpause = mainAudio.onended = () => { if (wordTimer) clearInterval(wordTimer); };
+          };
+        }
       });
     }
     mainAudio.onended = () => {
@@ -635,9 +684,15 @@
       setTimeout(()=>{ var modal = overlay.querySelector('#settingsPanelModalDynamic'); if (modal) modal.focus(); }, 25);
       // --- Settings Panel Interactivity ---
       const preview = overlay.querySelector('#settingsPreview');
+      const textDisplay = document.getElementById('textDisplay');
+      // Helper to apply a style to both preview and textDisplay
+      function applyStyle(prop, value) {
+        preview.style[prop] = value;
+        textDisplay.style[prop] = value;
+      }
       // Text Size
       overlay.querySelector('#textSizeSlider').oninput = function(e) {
-        preview.style.fontSize = e.target.value + 'em';
+        applyStyle('fontSize', e.target.value + 'em');
       };
       // Theme Selector
       overlay.querySelectorAll('.theme-btn').forEach(btn => {
@@ -659,6 +714,10 @@
           preview.style.color = t.color;
           preview.style.fontFamily = t.font === 'serif' ? 'Georgia, Times New Roman, serif' : 'Inter, Arial, sans-serif';
           preview.style.fontWeight = t.fontWeight;
+          textDisplay.style.background = t.bg;
+          textDisplay.style.color = t.color;
+          textDisplay.style.fontFamily = t.font === 'serif' ? 'Georgia, Times New Roman, serif' : 'Inter, Arial, sans-serif';
+          textDisplay.style.fontWeight = t.fontWeight;
         };
       });
       // Further Customization
@@ -670,27 +729,27 @@
       };
       // Bold Text
       overlay.querySelector('#boldTextToggle').oninput = function(e) {
-        preview.style.fontWeight = e.target.checked ? 'bold' : '';
+        applyStyle('fontWeight', e.target.checked ? 'bold' : '');
       };
       // Line Spacing
       overlay.querySelector('#lineSpacingSlider').oninput = function(e) {
-        preview.style.lineHeight = e.target.value;
+        applyStyle('lineHeight', e.target.value);
       };
       // Character Spacing
       overlay.querySelector('#charSpacingSlider').oninput = function(e) {
-        preview.style.letterSpacing = e.target.value + 'em';
+        applyStyle('letterSpacing', e.target.value + 'em');
       };
       // Word Spacing
       overlay.querySelector('#wordSpacingSlider').oninput = function(e) {
-        preview.style.wordSpacing = e.target.value + 'em';
+        applyStyle('wordSpacing', e.target.value + 'em');
       };
       // Margin Size
       overlay.querySelector('#marginSizeSlider').oninput = function(e) {
-        preview.style.margin = e.target.value + 'em';
+        applyStyle('margin', e.target.value + 'em');
       };
       // Justify Text
       overlay.querySelector('#justifyTextToggle').oninput = function(e) {
-        preview.style.textAlign = e.target.checked ? 'justify' : 'left';
+        applyStyle('textAlign', e.target.checked ? 'justify' : 'left');
       };
     };
   </script>
