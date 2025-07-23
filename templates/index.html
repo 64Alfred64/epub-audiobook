@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>EPUB Audio Reader</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"/>
-  <!-- Tailwind CDN for settings panel and general utility (for demo/prototype use) -->
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css" rel="stylesheet">
   <style>
     body {
@@ -17,7 +16,6 @@
       height: 100vh;
       overflow: hidden;
     }
-
     #sidebar {
       width: 250px;
       background: #1f1f1f;
@@ -76,7 +74,6 @@
     #sidebar-close:focus {
       outline: 2px solid #fff;
     }
-
     #hamburger {
       position: fixed;
       top: 1rem;
@@ -102,7 +99,6 @@
     #hamburger.open {
       background: #3a6fe2;
     }
-
     #sidebar-overlay {
       display: none;
       position: fixed;
@@ -114,7 +110,6 @@
     #sidebar.open + #sidebar-overlay {
       display: block;
     }
-
     #main {
       flex: 1;
       display: flex;
@@ -144,8 +139,6 @@
         display: none !important;
       }
     }
-
-    /* --- Apple Books Style --- */
     #textDisplay {
       margin: 3em auto 0 auto;
       max-width: 700px;
@@ -192,7 +185,6 @@
         border-radius: 0;
       }
     }
-    /* --- Floating Audio Player at Bottom --- */
     .audio-bar-bottom {
       position: fixed;
       left: 0;
@@ -271,7 +263,7 @@
         min-height: 48px;
       }
       #main {
-        padding-bottom: 56px; /* prevent content underlap */
+        padding-bottom: 56px;
       }
     }
     @media (min-width: 700px) {
@@ -282,21 +274,17 @@
         max-width: 100vw;
       }
     }
-    /* Hide the old audio player (if any) */
     .eleven-player { display: none !important; }
   </style>
 </head>
 <body>
-  <!-- Hamburger icon on the left -->
   <button id="hamburger" aria-label="Open chapters sidebar">☰</button>
-
   <div id="sidebar">
     <button id="sidebar-close" aria-label="Close chapters sidebar">✕</button>
     <h2>Chapters</h2>
     <ul id="chapterList"></ul>
   </div>
   <div id="sidebar-overlay"></div>
-
   <div id="main">
     <h1>EPUB Audio Reader</h1>
     <form id="uploadForm" enctype="multipart/form-data">
@@ -309,15 +297,72 @@
     <div id="status"></div>
     <div id="textDisplay"></div>
   </div>
-
-  <!-- Settings button, fixed on top right -->
-  <button id="settingsBtn" class="fixed top-4 right-4 z-50 bg-white/80 text-gray-900 rounded-full shadow-lg p-2 hover:bg-blue-100 focus:outline-none border border-gray-300" aria-label="Settings">
+  <button id="openSettingsPanelBtn" class="fixed top-4 right-4 z-50 bg-white/80 text-gray-900 rounded-full shadow-lg p-2 hover:bg-blue-100 focus:outline-none border border-gray-300" aria-label="Settings">
     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
   </button>
-  <!-- Modal root for React settings panel -->
-  <div id="settingsPanelRoot"></div>
-
-  <!-- Floating audio player at the bottom -->
+  <div id="settingsPanelOverlay" class="hidden fixed inset-0 z-[9999] bg-black/40 flex items-center justify-center" style="backdrop-filter: blur(2px);">
+    <div class="relative w-full max-w-md mx-auto rounded-2xl shadow-2xl bg-white/95 backdrop-blur-lg border border-gray-100 p-0 overflow-hidden font-sans">
+      <button id="closeSettingsPanelBtn" type="button" class="absolute top-3 right-3 text-gray-500 hover:text-blue-600 text-2xl font-bold z-10" aria-label="Close settings">&times;</button>
+      <header class="w-full py-4 px-6 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+        <h2 class="font-semibold text-lg tracking-wide text-gray-900">Reading Settings</h2>
+      </header>
+      <main class="p-6 space-y-7">
+        <section id="settingsPreview" class="rounded-xl transition-all duration-200 shadow-inner px-6 py-4 border bg-white text-gray-900 font-serif" style="font-size:1.1em;line-height:1.75;letter-spacing:0em;word-spacing:0em;margin:1.5em;text-align:justify;">
+          <div class="mb-1 text-[0.95em] opacity-70 font-medium">Chapter One</div>
+          <div>
+            The quick brown fox jumps over the lazy dog. “Reading should be a joy, not a chore,” she thought, as she adjusted her book’s settings.
+          </div>
+        </section>
+        <section>
+          <label for="settingsTextSize" class="block mb-2 font-medium text-gray-700">Text Size</label>
+          <div class="flex items-center space-x-2">
+            <span class="text-xs text-gray-400">A</span>
+            <input id="settingsTextSize" type="range" min="0.85" max="1.6" step="0.01" value="1.1" class="flex-1 accent-blue-500" aria-label="Adjust text size" />
+            <span class="text-lg text-gray-700 font-semibold">A</span>
+          </div>
+        </section>
+        <section>
+          <label class="block mb-2 font-medium text-gray-700">Theme</label>
+          <div class="flex items-center gap-2 flex-wrap" id="settingsThemeGroup"></div>
+        </section>
+        <section>
+          <button type="button" id="settingsAdvancedBtn" class="w-full py-2 mt-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold transition" aria-expanded="false">
+            Further Customization
+          </button>
+        </section>
+        <section id="settingsAdvancedSection" class="hidden space-y-5 border-t border-gray-100 pt-5">
+          <div class="flex items-center justify-between">
+            <label for="settingsBold" class="font-medium text-gray-700">Bold Text</label>
+            <input id="settingsBold" type="checkbox" class="w-5 h-5 accent-blue-600" />
+          </div>
+          <div>
+            <label for="settingsLineSpacing" class="block mb-2 font-medium text-gray-700">Line Spacing</label>
+            <input id="settingsLineSpacing" type="range" min="1" max="2.5" step="0.01" value="1.75" class="w-full accent-blue-500" aria-label="Adjust line spacing" />
+            <div class="text-xs text-gray-500 mt-1" id="settingsLineSpacingVal">1.75×</div>
+          </div>
+          <div>
+            <label for="settingsCharSpacing" class="block mb-2 font-medium text-gray-700">Character Spacing</label>
+            <input id="settingsCharSpacing" type="range" min="0" max="0.15" step="0.005" value="0" class="w-full accent-blue-500" aria-label="Adjust character spacing" />
+            <div class="text-xs text-gray-500 mt-1" id="settingsCharSpacingVal">Default</div>
+          </div>
+          <div>
+            <label for="settingsWordSpacing" class="block mb-2 font-medium text-gray-700">Word Spacing</label>
+            <input id="settingsWordSpacing" type="range" min="0" max="0.4" step="0.01" value="0" class="w-full accent-blue-500" aria-label="Adjust word spacing" />
+            <div class="text-xs text-gray-500 mt-1" id="settingsWordSpacingVal">Default</div>
+          </div>
+          <div>
+            <label for="settingsMarginSize" class="block mb-2 font-medium text-gray-700">Margin Size</label>
+            <input id="settingsMarginSize" type="range" min="0.5" max="3" step="0.05" value="1.5" class="w-full accent-blue-500" aria-label="Adjust margin size" />
+            <div class="text-xs text-gray-500 mt-1" id="settingsMarginSizeVal">1.5em</div>
+          </div>
+          <div class="flex items-center justify-between">
+            <label for="settingsJustify" class="font-medium text-gray-700">Justify Text</label>
+            <input id="settingsJustify" type="checkbox" class="w-5 h-5 accent-blue-600" checked />
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
   <div class="audio-bar-bottom" id="floatingPlayer" style="display: flex;">
     <button id="rewindBtn" title="Back 15 seconds">⏪</button>
     <button id="stopBtn" title="Stop">⏹️</button>
@@ -339,100 +384,181 @@
     </select>
     <span class="voice-label">Jenny</span>
   </div>
-
-  <!-- Your existing main JS and the settings panel integration -->
-  <script type="module">
-    // --- React/Tailwind Settings Panel Integration ---
-    import React, { useState } from "https://esm.sh/react@18.3.1";
-    import { createRoot } from "https://esm.sh/react-dom@18.3.1/client";
-    // The SettingsPanel component: You must place the full SettingsPanel.jsx code from earlier here, or import it via your build system.
-
-    // For simplicity, here is a minimal placeholder that you should replace:
-    function SettingsPanel({ initialSettings, onSettingsChange }) {
-      return (
-        <div className="w-full max-w-md mx-auto rounded-2xl shadow-2xl bg-white/90 backdrop-blur-lg border border-gray-100 p-0 overflow-hidden font-sans relative">
-          <button
-            type="button"
-            className="absolute top-3 right-3 text-gray-500 hover:text-blue-600 text-2xl font-bold"
-            onClick={() => window.closeSettingsPanel()}
-            aria-label="Close settings"
-          >
-            &times;
-          </button>
-          <div className="p-10 text-center text-gray-800">
-            <div className="mb-3 text-2xl font-bold">Settings Panel</div>
-            <p>Replace this placeholder with the full component from Copilot's answer!</p>
-          </div>
-        </div>
-      );
+  <script>
+  const THEMES = [
+    {
+      name: "Normal",
+      previewClass: "bg-white text-gray-900 font-serif",
+      bg: "#ffffff",
+      color: "#222",
+      font: "serif",
+    },
+    {
+      name: "Soft",
+      previewClass: "bg-[#fdf6f2] text-[#5a4631] font-serif",
+      bg: "#fdf6f2",
+      color: "#5a4631",
+      font: "serif"
+    },
+    {
+      name: "Bold",
+      previewClass: "bg-white text-black font-serif font-bold",
+      bg: "#fff",
+      color: "#000",
+      font: "serif",
+      bold: true
+    },
+    {
+      name: "Gray",
+      previewClass: "bg-gray-100 text-gray-600 font-serif",
+      bg: "#f3f4f6",
+      color: "#6b7280",
+      font: "serif"
+    },
+    {
+      name: "Quiet",
+      previewClass: "bg-black text-gray-200 font-serif",
+      bg: "#000",
+      color: "#e5e7eb",
+      font: "serif"
+    },
+    {
+      name: "Sepia",
+      previewClass: "bg-[#f9ecd5] text-[#6b4c1b] font-serif",
+      bg: "#f9ecd5",
+      color: "#6b4c1b",
+      font: "serif"
     }
+  ];
 
-    // Mount settings panel when needed
-    const settingsBtn = document.getElementById('settingsBtn');
-    let settingsRootInstance = null;
-    let currentSettings = {};
+  const settingsEls = {
+    overlay: document.getElementById("settingsPanelOverlay"),
+    openBtn: document.getElementById("openSettingsPanelBtn"),
+    closeBtn: document.getElementById("closeSettingsPanelBtn"),
+    preview: document.getElementById("settingsPreview"),
+    textSize: document.getElementById("settingsTextSize"),
+    themeGroup: document.getElementById("settingsThemeGroup"),
+    advancedBtn: document.getElementById("settingsAdvancedBtn"),
+    advancedSection: document.getElementById("settingsAdvancedSection"),
+    bold: document.getElementById("settingsBold"),
+    lineSpacing: document.getElementById("settingsLineSpacing"),
+    lineSpacingVal: document.getElementById("settingsLineSpacingVal"),
+    charSpacing: document.getElementById("settingsCharSpacing"),
+    charSpacingVal: document.getElementById("settingsCharSpacingVal"),
+    wordSpacing: document.getElementById("settingsWordSpacing"),
+    wordSpacingVal: document.getElementById("settingsWordSpacingVal"),
+    marginSize: document.getElementById("settingsMarginSize"),
+    marginSizeVal: document.getElementById("settingsMarginSizeVal"),
+    justify: document.getElementById("settingsJustify"),
+  };
 
-    function applySettings(settings) {
-      currentSettings = settings;
-      const textDisplay = document.getElementById('textDisplay');
-      if (!textDisplay) return;
-      textDisplay.classList.remove(
-        "bg-white", "text-gray-900", "font-serif",
-        "bg-[#fdf6f2]", "text-[#5a4631]",
-        "text-black", "font-bold",
-        "bg-gray-100", "text-gray-600",
-        "bg-black", "text-gray-200",
-        "bg-[#f9ecd5]", "text-[#6b4c1b]"
-      );
-      const themeMap = {
-        "Normal": ["bg-white", "text-gray-900", "font-serif"],
-        "Soft": ["bg-[#fdf6f2]", "text-[#5a4631]", "font-serif"],
-        "Bold": ["bg-white", "text-black", "font-serif", "font-bold"],
-        "Gray": ["bg-gray-100", "text-gray-600", "font-serif"],
-        "Quiet": ["bg-black", "text-gray-200", "font-serif"],
-        "Sepia": ["bg-[#f9ecd5]", "text-[#6b4c1b]", "font-serif"],
-      };
-      themeMap[settings.theme]?.forEach(cls => textDisplay.classList.add(cls));
-      textDisplay.style.fontSize = settings.textSize + "em";
-      textDisplay.style.lineHeight = settings.lineSpacing;
-      textDisplay.style.letterSpacing = settings.charSpacing + "em";
-      textDisplay.style.wordSpacing = settings.wordSpacing + "em";
-      textDisplay.style.margin = settings.marginSize + "em";
-      textDisplay.style.textAlign = settings.justify ? "justify" : "left";
-      textDisplay.style.fontWeight = settings.bold ? "bold" : "normal";
-    }
+  let settingsState = {
+    textSize: 1.1,
+    theme: 0,
+    bold: false,
+    lineSpacing: 1.75,
+    charSpacing: 0,
+    wordSpacing: 0,
+    marginSize: 1.5,
+    justify: true
+  };
 
-    settingsBtn?.addEventListener('click', () => {
-      const overlay = document.createElement('div');
-      overlay.className = "fixed inset-0 z-[9999] bg-black/30 flex items-center justify-center";
-      overlay.style.backdropFilter = "blur(2px)";
-      overlay.id = "settingsOverlay";
-      overlay.onclick = (e) => { if (e.target === overlay) unmountPanel(); };
-      document.body.appendChild(overlay);
-      const panelDiv = document.createElement('div');
-      panelDiv.className = "z-[10000]";
-      overlay.appendChild(panelDiv);
-      settingsRootInstance = createRoot(panelDiv);
-      settingsRootInstance.render(
-        React.createElement(SettingsPanel, {
-          initialSettings: currentSettings,
-          onSettingsChange: applySettings,
-        })
-      );
-    });
+  settingsEls.themeGroup.innerHTML = "";
+  THEMES.forEach((t, idx) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.setAttribute("aria-label", t.name);
+    btn.className = "rounded-xl border-2 flex flex-col items-center justify-center px-2 py-2 text-xs transition-all duration-200 w-20 h-20 focus:outline-none border-gray-200 mb-1";
+    btn.innerHTML =
+      `<div class="w-10 h-8 rounded-lg border shadow-inner mb-1" style="background:${t.bg};color:${t.color};font-family:${t.font};font-weight:${t.bold ? 700 : 400};display:flex;align-items:center;justify-content:center;"><span>Aa</span></div>
+      <span class="text-[0.9em]">${t.name}</span>`;
+    btn.onclick = () => {
+      settingsState.theme = idx;
+      updatePanel();
+    };
+    btn.id = "settingsThemeBtn" + idx;
+    settingsEls.themeGroup.appendChild(btn);
+  });
 
-    function unmountPanel() {
-      const overlay = document.getElementById("settingsOverlay");
-      if (overlay) overlay.remove();
-      if (settingsRootInstance) {
-        settingsRootInstance.unmount();
-        settingsRootInstance = null;
+  settingsEls.openBtn.onclick = () => {
+    settingsEls.overlay.classList.remove("hidden");
+    updatePanel();
+  };
+  settingsEls.closeBtn.onclick = () => {
+    settingsEls.overlay.classList.add("hidden");
+  };
+  settingsEls.overlay.onclick = (e) => {
+    if (e.target === settingsEls.overlay) settingsEls.overlay.classList.add("hidden");
+  };
+  document.addEventListener("keydown", (e) => {
+    if (!settingsEls.overlay.classList.contains("hidden") && e.key === "Escape") settingsEls.overlay.classList.add("hidden");
+  });
+
+  settingsEls.advancedBtn.onclick = function() {
+    const shown = settingsEls.advancedSection.classList.toggle("hidden");
+    this.setAttribute("aria-expanded", !shown);
+  };
+
+  settingsEls.textSize.oninput = e => { settingsState.textSize = parseFloat(e.target.value); updatePanel(); };
+  settingsEls.bold.oninput = e => { settingsState.bold = e.target.checked; updatePanel(); };
+  settingsEls.lineSpacing.oninput = e => { settingsState.lineSpacing = parseFloat(e.target.value); updatePanel(); };
+  settingsEls.charSpacing.oninput = e => { settingsState.charSpacing = parseFloat(e.target.value); updatePanel(); };
+  settingsEls.wordSpacing.oninput = e => { settingsState.wordSpacing = parseFloat(e.target.value); updatePanel(); };
+  settingsEls.marginSize.oninput = e => { settingsState.marginSize = parseFloat(e.target.value); updatePanel(); };
+  settingsEls.justify.oninput = e => { settingsState.justify = e.target.checked; updatePanel(); };
+
+  function updatePanel() {
+    THEMES.forEach((t, idx) => {
+      const btn = document.getElementById("settingsThemeBtn" + idx);
+      if (idx === settingsState.theme) {
+        btn.classList.add("border-blue-600", "ring-2", "ring-blue-300");
+        btn.classList.remove("border-gray-200");
+      } else {
+        btn.classList.remove("border-blue-600", "ring-2", "ring-blue-300");
+        btn.classList.add("border-gray-200");
       }
+    });
+    settingsEls.textSize.value = settingsState.textSize;
+    settingsEls.bold.checked = settingsState.bold;
+    settingsEls.lineSpacing.value = settingsState.lineSpacing;
+    settingsEls.charSpacing.value = settingsState.charSpacing;
+    settingsEls.wordSpacing.value = settingsState.wordSpacing;
+    settingsEls.marginSize.value = settingsState.marginSize;
+    settingsEls.justify.checked = settingsState.justify;
+    settingsEls.lineSpacingVal.textContent = settingsState.lineSpacing.toFixed(2) + "×";
+    settingsEls.charSpacingVal.textContent = settingsState.charSpacing === 0 ? "Default" : `${(settingsState.charSpacing*1000).toFixed(0)} th em`;
+    settingsEls.wordSpacingVal.textContent = settingsState.wordSpacing === 0 ? "Default" : `${(settingsState.wordSpacing*1000).toFixed(0)} th em`;
+    settingsEls.marginSizeVal.textContent = settingsState.marginSize === 1.5 ? "1.5em" : `${settingsState.marginSize}em`;
+    const t = THEMES[settingsState.theme];
+    settingsEls.preview.className = `rounded-xl transition-all duration-200 shadow-inner px-6 py-4 border ${t.previewClass} ${settingsState.bold ? "font-bold" : ""}`;
+    settingsEls.preview.style.fontSize = settingsState.textSize + "em";
+    settingsEls.preview.style.lineHeight = settingsState.lineSpacing;
+    settingsEls.preview.style.letterSpacing = settingsState.charSpacing + "em";
+    settingsEls.preview.style.wordSpacing = settingsState.wordSpacing + "em";
+    settingsEls.preview.style.margin = settingsState.marginSize + "em";
+    settingsEls.preview.style.textAlign = settingsState.justify ? "justify" : "left";
+    settingsEls.preview.style.background = t.bg;
+    settingsEls.preview.style.color = t.color;
+    settingsEls.preview.style.fontFamily = t.font;
+    settingsEls.preview.style.fontWeight = settingsState.bold ? "bold" : (t.bold ? "bold" : "normal");
+    const mainText = document.getElementById("textDisplay");
+    if (mainText) {
+      mainText.className = `${t.previewClass} ${settingsState.bold ? "font-bold" : ""}`;
+      mainText.style.fontSize = settingsState.textSize + "em";
+      mainText.style.lineHeight = settingsState.lineSpacing;
+      mainText.style.letterSpacing = settingsState.charSpacing + "em";
+      mainText.style.wordSpacing = settingsState.wordSpacing + "em";
+      mainText.style.margin = settingsState.marginSize + "em auto";
+      mainText.style.textAlign = settingsState.justify ? "justify" : "left";
+      mainText.style.background = t.bg;
+      mainText.style.color = t.color;
+      mainText.style.fontFamily = t.font;
+      mainText.style.fontWeight = settingsState.bold ? "bold" : (t.bold ? "bold" : "normal");
     }
-    window.closeSettingsPanel = unmountPanel;
+  }
+  updatePanel();
   </script>
   <script>
-  // --- Your vanilla JS EPUB logic from before (audio player, sidebar, etc) ---
   document.addEventListener('DOMContentLoaded', () => {
     const sidebar     = document.getElementById('sidebar');
     const hamburger   = document.getElementById('hamburger');
@@ -457,7 +583,6 @@
     audio.preload = 'metadata';
     let uploadId, chunks = [], cache = {}, currentIdx = 0, playingSeq = false;
 
-    // Sidebar open/close logic
     function openSidebar() {
       sidebar.classList.add('open');
       hamburger.classList.add('open');
@@ -482,7 +607,6 @@
       }
     });
 
-    // Voice dropdown
     const voices = [
       "en-AU-NatashaNeural","en-AU-WilliamNeural",
       "en-CA-ClaraNeural","en-CA-LiamNeural",
@@ -498,7 +622,6 @@
       voiceSelect.appendChild(o);
     });
 
-    // Upload EPUB
     form.addEventListener('submit', async e => {
       e.preventDefault();
       statusDiv.textContent = 'Extracting text…';
@@ -516,7 +639,6 @@
       uploadId = data.upload_id;
       chunks   = data.text_chunks;
 
-      // --- Improved Chapter Detection ---
       let chapters = data.chapters || [];
       if (!chapters || chapters.length === 0) {
         chapters = [];
@@ -546,10 +668,8 @@
         chapterList.appendChild(li);
       });
 
-      // Render paragraphs/book content
       textDiv.innerHTML = '';
       chunks.forEach((c, i) => {
-        // If chunk looks like a chapter heading, render as <h2>
         if (/^chapter\s+\d+/i.test(c.trim()) || /^prologue$/i.test(c.trim()) || /^epilogue$/i.test(c.trim())) {
           const h = document.createElement('h2');
           h.textContent = c.trim();
@@ -569,7 +689,6 @@
     chapterList.addEventListener('click', e => {
       if (e.target.tagName !== 'LI') return;
       const idx = Number(e.target.dataset.index);
-      // Scroll to the nearest heading or paragraph with that index
       const el = textDiv.querySelector(`[data-index="${idx}"]`);
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -663,13 +782,10 @@
       audio.currentTime = Math.min(audio.duration, audio.currentTime + 15);
     };
 
-    // Playback speed control
     speedSelect.addEventListener('change', () => {
       audio.playbackRate = parseFloat(speedSelect.value);
     });
-    // Set default playback rate
     audio.playbackRate = parseFloat(speedSelect.value);
-
   });
   </script>
 </body>
