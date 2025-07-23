@@ -1,8 +1,9 @@
 import os
 import re
+import uuid
 import asyncio
 import traceback
-from flask import Flask, request, jsonify, send_from_directory, render_template
+from flask import Flask, request, jsonify, send_file, render_template
 from flask_cors import CORS
 from edge_tts import Communicate
 from ebooklib import epub, ITEM_DOCUMENT
@@ -11,98 +12,105 @@ from bs4 import BeautifulSoup
 app = Flask(__name__)
 CORS(app)
 
+# use /tmp on Render for writable storage
 UPLOAD_FOLDER = '/tmp/uploads'
-AUDIO_FOLDER = '/tmp/audio_chunks'
+AUDIO_FOLDER  = '/tmp/audio_chunks'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(AUDIO_FOLDER, exist_ok=True)
 
-VOICES = [
-    "en-AU-NatashaNeural", "en-AU-WilliamNeural", "en-CA-ClaraNeural", "en-CA-LiamNeural",
-    "en-GB-LibbyNeural", "en-GB-RyanNeural", "en-GB-SoniaNeural", "en-IN-NeerjaNeural",
-    "en-IN-PriyaNeural", "en-US-AriaNeural", "en-US-GuyNeural", "en-US-JennyNeural",
-    "en-US-MichelleNeural", "en-US-TonyNeural"
-]
+# in-memory store for each upload’s text chunks and chosen voice
+uploads = {}
 
 def clean_text(text):
-    text = text.replace('\u200b', '')  # zero-width space
-    text = text.replace('\xa0', ' ')   # non-breaking space
-    return re.sub(r'[^\x00-\x7F]+', ' ', text)  # remove non-ascii
+    text = text.replace('\u200b', '').replace('\xa0', ' ')
+    return re.sub(r'[^\x00-\x7F]+', ' ', text)
 
-def extract_epub_text(epub_path):
-    book = epub.read_epub(epub_path)
-    title = book.get_metadata('DC', 'title')
-    title_str = title[0][0] if title else "Untitled EPUB"
-    text = ""
+def extract_epub_text(path):
+    book = epub.read_epub(path)
+    title_meta = book.get_metadata('DC', 'title')
+    title = title_meta[0][0] if title_meta else "Untitled EPUB"
+    full_text = ""
     for doc in book.get_items_of_type(ITEM_DOCUMENT):
         soup = BeautifulSoup(doc.get_body_content(), 'html.parser')
-        text += soup.get_text(separator=' ', strip=True) + " "
-    return title_str, clean_text(text)
+        full_text += soup.get_text(separator=' ', strip=True) + " "
+    return title, clean_text(full_text)
 
-def chunk_text(text):
-    sentences = re.split(r'(?<=[.?!])\s+', text)
-    return [s.strip() for s in sentences if s.strip()]
+def chunk_text(text, max_chars=500):
+    import nltk
+    from nltk.tokenize import sent_tokenize
+    try:
+        nltk.data.find('tokenizers/punkt')
+    except LookupError:
+        nltk.download('punkt', quiet=True)
+    sentences = sent_tokenize(text)
+    chunks, current = [], ""
+    for s in sentences:
+        if len(current) + len(s) + 1 <= max_chars:
+            current = f"{current} {s}".strip()
+        else:
+            chunks.append(current)
+            current = s
+    if current:
+        chunks.append(current)
+    return chunks
 
-async def synthesize_chunk(text, filename, voice="en-US-JennyNeural"):
-    communicate = Communicate(text=text, voice=voice)
-    await communicate.save(filename)
+async def synthesize(text, out_path, voice):
+    comm = Communicate(text=text, voice=voice)
+    with open(out_path, 'wb') as f:
+        async for chunk in comm.stream():
+            f.write(chunk)
 
-async def synthesize_chunks_async(chunks, voice="en-US-JennyNeural"):
-    tasks = []
-    audio_files = []
-
-    for i, chunk in enumerate(chunks):
-        clean_chunk = re.sub(r'[^\x00-\x7F]+', ' ', chunk)
-        filename = os.path.join(AUDIO_FOLDER, f'chunk_{i}.mp3')
-        tasks.append(synthesize_chunk(clean_chunk, filename, voice))
-        audio_files.append(f'chunk_{i}.mp3')
-
-    await asyncio.gather(*tasks)
-    return audio_files
-
-def run_async(func, *args, **kwargs):
-    return asyncio.run(func(*args, **kwargs))
+def run_tts(text, out_path, voice):
+    return asyncio.run(synthesize(text, out_path, voice))
 
 @app.route('/')
 def index():
-    return render_template('index.html', voices=VOICES)
+    return render_template('index.html')
 
 @app.route('/upload', methods=['POST'])
 def upload_epub():
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file part named "file" in the request'}), 400
+    f = request.files.get('file')
+    if not f or not f.filename.lower().endswith('.epub'):
+        return jsonify(error="Please upload a valid .epub"), 400
 
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({'error': 'No selected file'}), 400
-
-    if not file.filename.lower().endswith('.epub'):
-        return jsonify({'error': 'File must be an EPUB (.epub)'}), 400
-
-    voice = request.form.get('voice', '').strip()
-    if not voice or voice not in VOICES:
-        voice = 'en-US-JennyNeural'
-
-    filepath = os.path.join(UPLOAD_FOLDER, file.filename)
-    file.save(filepath)
+    voice = request.form.get('voice') or 'en-US-JennyNeural'
+    uid = uuid.uuid4().hex
+    epub_path = os.path.join(UPLOAD_FOLDER, f"{uid}.epub")
+    f.save(epub_path)
 
     try:
-        title, text = extract_epub_text(filepath)
+        title, text = extract_epub_text(epub_path)
         chunks = chunk_text(text)
-        audio_files = run_async(synthesize_chunks_async, chunks, voice=voice)
     except Exception as e:
         traceback.print_exc()
-        return jsonify({'error': 'TTS synthesis failed', 'details': str(e)}), 500
+        return jsonify(error="Failed to extract text", details=str(e)), 500
 
-    return jsonify({
-        'title': title,
-        'text_chunks': chunks,
-        'audio_files': audio_files
-    })
+    uploads[uid] = {'chunks': chunks, 'voice': voice}
+    return jsonify(upload_id=uid, text_chunks=chunks)
 
-@app.route('/audio/<filename>')
-def get_audio(filename):
-    return send_from_directory(AUDIO_FOLDER, filename)
+@app.route('/chunk', methods=['POST'])
+def get_chunk():
+    data = request.get_json(force=True)
+    uid = data.get('upload_id')
+    idx = int(data.get('index', -1))
+
+    if uid not in uploads or idx < 0 or idx >= len(uploads[uid]['chunks']):
+        return jsonify(error="Invalid upload_id or index"), 400
+
+    text = uploads[uid]['chunks'][idx]
+    voice = uploads[uid]['voice']
+    filename = f"{uid}_{idx}.mp3"
+    path = os.path.join(AUDIO_FOLDER, filename)
+
+    if not os.path.exists(path):
+        try:
+            run_tts(text, path, voice)
+        except Exception as e:
+            traceback.print_exc()
+            return jsonify(error="TTS failed", details=str(e)), 500
+
+    return send_file(path, mimetype='audio/mpeg')
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    app.run(debug=True, host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=port, debug=True)
