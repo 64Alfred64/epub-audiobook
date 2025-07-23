@@ -120,53 +120,27 @@
       width: 100vw;
       padding-bottom: 6.5rem;
     }
-    #textDisplay {
-      margin: 0 auto;
+    #epubContent.epub-content-area {
+      background: #181818;
+      color: #ececec;
       max-width: 700px;
       width: 100%;
-      padding: 2em 1.5em 3em 1.5em;
-      background: #181818;
+      margin: 0.75em auto 1em auto;
+      padding: 1.25em 1.5em 2em 1.5em;
       border-radius: 16px;
       box-shadow: 0 8px 32px rgba(0,0,0,0.22);
-      font-family: 'Georgia', 'Times New Roman', serif;
+      font-family: 'Georgia','Times New Roman',serif;
       font-size: 1.18em;
       line-height: 1.75;
-      color: #ececec;
-      letter-spacing: 0.01em;
-      transition: all 0.2s;
-      display: block;
       min-height: 120px;
-      height: auto;
-    }
-    #textDisplay h1, #textDisplay h2, #textDisplay h3 {
-      font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
-      color: #f6f6f6;
-      margin-top: 2.5em;
-      margin-bottom: 1.5em;
-      font-weight: 700;
-      letter-spacing: 0.01em;
-      text-align: center;
-    }
-    #textDisplay p {
-      margin: 0 0 1.4em 0;
-      text-align: justify;
-      text-indent: 2em;
-      font-size: 1.18em;
-      line-height: 1.75;
-    }
-    #textDisplay p + h1, #textDisplay p + h2, #textDisplay p + h3 {
-      margin-top: 2.5em;
-    }
-    .highlight {
-      background: rgba(76,139,245,0.18);
-      border-left: 4px solid #4c8bf5;
-      padding-left: 0.5em;
+      transition: background 0.2s, color 0.2s;
     }
     @media (max-width: 700px) {
-      #textDisplay {
-        padding: 1em 0.5em 4.5em 0.5em;
+      #epubContent.epub-content-area {
+        padding: 0.75em 0.5em 3em 0.5em;
         max-width: 100vw;
         border-radius: 0;
+        margin: 0.5em auto 1em auto;
       }
       #main {
         padding-bottom: 7rem;
@@ -231,43 +205,48 @@
 </head>
 <body>
   <div class="app-container h-screen w-screen grid grid-cols-[auto_1fr] grid-rows-[1fr_auto]">
-    <button class="hamburger block md:hidden fixed top-4 left-4 z-[1100] bg-[#222] text-white p-2 rounded focus:outline-none" aria-label="Open sidebar" id="hamburgerBtn">☰</button>
-    <div class="sidebar-overlay fixed inset-0 bg-black/60 z-[1099] hidden" id="sidebarOverlay"></div>
-    <div class="sidebar row-span-2 h-full w-[280px] bg-black border-r border-[#333] overflow-y-auto p-5 z-[1101] transition-transform duration-300 -translate-x-full md:translate-x-0 fixed md:static top-0 left-0" id="sidebar">
-      <div class="sidebar-header flex items-center gap-2 mb-4">
-        <button class="back-button control-btn">&lt;</button>
+    <!-- Sidebar Navigation -->
+    <button class="hamburger block md:hidden fixed top-4 left-4 z-[1100] bg-[#222] text-white p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-400" aria-label="Open sidebar" id="hamburgerBtn">☰</button>
+    <div class="sidebar-overlay fixed inset-0 bg-black/60 z-[1099] hidden" id="sidebarOverlay" tabindex="-1" aria-hidden="true"></div>
+    <nav class="sidebar row-span-2 h-full w-[280px] bg-black border-r border-[#333] overflow-y-auto p-5 z-[1101] transition-transform duration-300 -translate-x-full md:translate-x-0 fixed md:static top-0 left-0" id="sidebar" aria-label="Book navigation">
+      <div class="sidebar-header flex items-center gap-2 mb-4 min-w-0">
+        <button class="back-button control-btn" aria-label="Back to library">&lt;</button>
         <img id="sidebarCover" src="" alt="Book cover" style="width:56px;height:80px;object-fit:cover;border-radius:6px;background:#222;display:none;margin-right:0.75em;"/>
-        <h2 class="book-title flex-1 text-lg font-bold text-white" id="sidebarBookTitle">Book Title</h2>
-        <button class="menu-button control-btn">⋯</button>
+        <h2 class="book-title flex-1 text-lg font-bold text-white" id="sidebarBookTitle" aria-label="Book title">Book Title</h2>
+        <button class="menu-button control-btn" aria-label="Sidebar menu">⋯</button>
       </div>
       <div class="chapter-list">
         <h3 class="text-xs font-semibold text-gray-500 mb-2">Chapters</h3>
-        <ul class="chapter-nav" id="chapterList"></ul>
+        <ul class="chapter-nav" id="chapterList" role="listbox" aria-label="Chapters"></ul>
       </div>
-    </div>
-    <div style="position:fixed;top:0;left:0;width:100vw;z-index:2147483647;background:#181818;border-bottom:1px solid #333;box-shadow:0 4px 24px 0 rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;min-height:48px;padding:0 16px;">
+    </nav>
+    <!-- Upload Bar -->
+    <header style="position:fixed;top:0;left:0;width:100vw;z-index:2147483647;background:#181818;border-bottom:1px solid #333;box-shadow:0 4px 24px 0 rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;min-height:48px;padding:0 16px;" role="banner">
       <h1 style="font-size:1.1rem;font-weight:600;color:#fff;margin:0 16px 0 0;white-space:nowrap;">EPUB Audio Reader</h1>
-      <form id="uploadForm" enctype="multipart/form-data" style="display:flex;flex-direction:row;align-items:center;gap:8px;">
-        <input type="file" name="file" accept=".epub" required style="font-size:0.95rem;color:#ccc;background:#23232a;border:1px solid #444;border-radius:4px;padding:4px 8px;"/>
-        <select id="voiceSelect" name="voice" style="background:#23232a;color:#fff;border:1px solid #444;border-radius:4px;padding:4px 8px;font-size:0.95rem;">
+      <form id="uploadForm" enctype="multipart/form-data" style="display:flex;flex-direction:row;align-items:center;gap:8px;" aria-label="Upload EPUB">
+        <input type="file" name="file" accept=".epub" required style="font-size:0.95rem;color:#ccc;background:#23232a;border:1px solid #444;border-radius:4px;padding:4px 8px;" aria-label="Choose EPUB file"/>
+        <select id="voiceSelect" name="voice" style="background:#23232a;color:#fff;border:1px solid #444;border-radius:4px;padding:4px 8px;font-size:0.95rem;" aria-label="Voice selection">
           <option value="">Select Voice (default: Jenny)</option>
         </select>
         <button type="submit" style="background:#2563eb;color:#fff;padding:4px 16px;border-radius:4px;font-weight:600;border:none;font-size:0.95rem;">Upload</button>
       </form>
-      <div id="status" style="font-size:0.95rem;color:#bbb;margin-left:16px;"></div>
-    </div>
-    <div class="main-content col-start-2 row-start-1 bg-black text-white pb-0 pr-0 pl-0 flex flex-col h-full transition-all duration-300" id="mainContent" style="margin-top:60px;">
+      <div id="status" style="font-size:0.95rem;color:#bbb;margin-left:16px;" aria-live="polite"></div>
+    </header>
+    <!-- Main Reading Area -->
+    <main class="main-content col-start-2 row-start-1 bg-black text-white pb-0 pr-0 pl-0 flex flex-col h-full transition-all duration-300" id="mainContent" style="margin-top:60px;" aria-label="Reading area">
+      <div id="epubContent" class="epub-content-area" tabindex="0" aria-label="Book text"></div>
       <div id="searchBarContainer" style="width:100%;max-width:900px;margin:0 auto 0.5em auto;display:flex;align-items:center;gap:0.5em;padding:0.5em 0.5em 0 0.5em;position:relative;z-index:2;">
         <span style="display:inline-flex;align-items:center;justify-content:center;width:2em;height:2em;color:#aaa;font-size:1.2em;">
-          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
         </span>
-        <input id="searchInput" type="text" placeholder="Search in book..." style="flex:1 1 auto;min-width:0;background:#23232a;color:#fff;border:1px solid #444;border-radius:4px;padding:0.5em 1em;font-size:1em;outline:none;"/>
-        <button id="searchPrevBtn" title="Previous match" style="background:#23232a;color:#aaa;border:none;border-radius:4px;padding:0.4em 0.7em;font-size:1em;cursor:pointer;">&#8593;</button>
-        <button id="searchNextBtn" title="Next match" style="background:#23232a;color:#aaa;border:none;border-radius:4px;padding:0.4em 0.7em;font-size:1em;cursor:pointer;">&#8595;</button>
-        <span id="searchCount" style="color:#aaa;font-size:0.95em;margin-left:0.5em;"></span>
+        <input id="searchInput" type="text" placeholder="Search in book..." style="flex:1 1 auto;min-width:0;background:#23232a;color:#fff;border:1px solid #444;border-radius:4px;padding:0.5em 1em;font-size:1em;outline:none;" aria-label="Search in book"/>
+        <button id="searchPrevBtn" title="Previous match" style="background:#23232a;color:#aaa;border:none;border-radius:4px;padding:0.4em 0.7em;font-size:1em;cursor:pointer;" aria-label="Previous search result">&#8593;</button>
+        <button id="searchNextBtn" title="Next match" style="background:#23232a;color:#aaa;border:none;border-radius:4px;padding:0.4em 0.7em;font-size:1em;cursor:pointer;" aria-label="Next search result">&#8595;</button>
+        <span id="searchCount" style="color:#aaa;font-size:0.95em;margin-left:0.5em;" aria-live="polite"></span>
       </div>
-    </div>
-    <div class="media-controls col-span-2 row-start-2 w-full bg-black border-t border-[#333] p-4 z-[1000] flex flex-col gap-2" id="mediaControls" style="position:sticky; bottom:0; left:0; right:0;">
+    </main>
+    <!-- Audio Controls -->
+    <footer class="media-controls col-span-2 row-start-2 w-full bg-black border-t border-[#333] p-4 z-[1000] flex flex-col gap-2" id="mediaControls" style="position:sticky; bottom:0; left:0; right:0;" aria-label="Audio controls">
       <div class="progress-container flex items-center gap-3 mb-2">
         <span class="time-current text-xs text-gray-400" id="audioTimeCurrent">00:00</span>
         <div class="progress-bar flex-1 h-1 bg-[#333] rounded relative cursor-pointer mx-2" id="customProgressBar">
@@ -297,8 +276,8 @@
           <button class="control-btn" id="audioBarSettingsBtn" aria-label="Settings">⚙️</button>
         </div>
       </div>
-      <audio id="mainAudio" preload="metadata" style="display:none"></audio>
-    </div>
+      <audio id="mainAudio" preload="metadata" style="display:none" aria-label="Audio playback"></audio>
+    </footer>
   </div>
   <!-- Dynamic Settings Modal injected by script below -->
 
@@ -366,6 +345,7 @@
     const bookCover   = document.getElementById('bookCover');
     const mediaBookTitle = document.getElementById('mediaBookTitle');
     const mediaNarrator = document.getElementById('mediaNarrator');
+    const epubContent  = document.getElementById('epubContent');
     let uploadId, chunks = [], cache = {}, currentIdx = 0, playingSeq = false;
     const voices = [
       "en-AU-NatashaNeural","en-AU-WilliamNeural",
@@ -381,6 +361,36 @@
       o.textContent = v;
       voiceSelect.appendChild(o);
     });
+    let currentChapterFile = null;
+
+    function renderChapterContent(chunks) {
+      if (!epubContent) return;
+      epubContent.innerHTML = '';
+      chunks.forEach((c, i) => {
+        const trimmed = c.trim();
+        if (/^chapter\s+\d+/i.test(trimmed) || /^prologue$/i.test(trimmed) || /^epilogue$/i.test(trimmed)) {
+          const h = document.createElement('h2');
+          h.textContent = trimmed;
+          h.dataset.index = i;
+          epubContent.appendChild(h);
+        } else if (/^data:image\//.test(trimmed) || /\.(jpg|jpeg|png|gif)$/i.test(trimmed)) {
+          const img = document.createElement('img');
+          img.src = trimmed;
+          img.alt = `Image ${i+1}`;
+          img.style.maxWidth = '100%';
+          img.style.display = 'block';
+          img.style.margin = '1.5em auto';
+          img.dataset.index = i;
+          epubContent.appendChild(img);
+        } else {
+          const p = document.createElement('p');
+          p.textContent = c;
+          p.dataset.index = i;
+          epubContent.appendChild(p);
+        }
+      });
+    }
+
     form.addEventListener('submit', async e => {
       e.preventDefault();
       statusDiv.textContent = 'Extracting text…';
@@ -397,44 +407,63 @@
       let chapters = data.chapters || [];
       // Update book title and cover image
       const bookTitle = data.book_title || 'Untitled EPUB';
-      document.getElementById('sidebarBookTitle').textContent = bookTitle;
-      document.getElementById('mediaBookTitle').textContent = bookTitle;
-      if (data.cover_image) {
-        document.getElementById('sidebarCover').src = data.cover_image;
-        document.getElementById('sidebarCover').style.display = '';
-        document.getElementById('mediaBookCover').src = data.cover_image;
-        document.getElementById('mediaBookCover').style.display = '';
-      } else {
-        document.getElementById('sidebarCover').src = '';
-        document.getElementById('sidebarCover').style.display = 'none';
-        document.getElementById('mediaBookCover').src = '';
-        document.getElementById('mediaBookCover').style.display = 'none';
+      // Update all book title UI elements
+      document.querySelectorAll('.book-title').forEach(el => { el.textContent = bookTitle; });
+      // Ensure sidebar title is always visible and never overlaps
+      const sidebarTitle = document.getElementById('sidebarBookTitle');
+      if (sidebarTitle) {
+        sidebarTitle.textContent = bookTitle;
+        sidebarTitle.style.position = 'relative';
+        sidebarTitle.style.left = '0';
+        sidebarTitle.style.top = '0';
+        sidebarTitle.style.zIndex = '1';
+        sidebarTitle.style.whiteSpace = 'nowrap';
+        sidebarTitle.style.overflow = 'hidden';
+        sidebarTitle.style.textOverflow = 'ellipsis';
+        sidebarTitle.style.maxWidth = '180px';
       }
-      // Render chapter list
+      // Media controls title
+      const mediaTitle = document.getElementById('mediaBookTitle');
+      if (mediaTitle) {
+        mediaTitle.textContent = bookTitle;
+        mediaTitle.style.whiteSpace = 'nowrap';
+        mediaTitle.style.overflow = 'hidden';
+        mediaTitle.style.textOverflow = 'ellipsis';
+        mediaTitle.style.maxWidth = '140px';
+      }
+      // Render chapter list in sidebar
       chapterList.innerHTML = '';
       chapters.forEach((ch, idx) => {
         const li = document.createElement('li');
         li.textContent = ch.title;
         li.dataset.fileName = ch.file_name;
+        li.className = 'chapter-list-item';
+        li.style.cursor = 'pointer';
+        li.style.padding = '0.5em 0.75em';
+        li.style.borderRadius = '4px';
+        li.style.transition = 'background 0.2s';
+        li.onclick = function() {
+          loadAndDisplayChapter(ch.file_name);
+          setTimeout(() => {
+            if (epubContent) epubContent.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 200);
+        };
         chapterList.appendChild(li);
       });
-      // Load and display the first chapter
+      // Load and display the first chapter automatically and scroll to it
       if (chapters.length > 0) {
         await loadAndDisplayChapter(chapters[0].file_name);
+        setTimeout(() => {
+          if (epubContent) epubContent.scrollIntoView({ behavior: 'auto', block: 'start' });
+        }, 200);
       }
-      // Force EPUB content into view after DOM update
-      setTimeout(() => {
-        const reader = document.getElementById('reader');
-        if (reader) reader.scrollIntoView({ behavior: 'auto', block: 'start' });
-        window.scrollTo({ top: 0, behavior: 'auto' });
-      }, 300);
     });
 
-    // Function to load and display a chapter by file_name
     async function loadAndDisplayChapter(fileName) {
       if (!uploadId || !fileName) return;
+      if (fileName === currentChapterFile) return; // Avoid reloading same chapter
+      currentChapterFile = fileName;
       statusDiv.textContent = 'Loading chapter...';
-      chapterList.innerHTML = '';
       try {
         const res = await fetch('/chapter', {
           method: 'POST',
@@ -447,56 +476,19 @@
         }
         const data = await res.json();
         const chunks = data.chunks || [];
-        // Render the chapter content (same as before)
-        chunks.forEach((c, i) => {
-          const trimmed = c.trim();
-          if (/^chapter\s+\d+/i.test(trimmed) || /^prologue$/i.test(trimmed) || /^epilogue$/i.test(trimmed)) {
-            const h = document.createElement('h2');
-            h.textContent = trimmed;
-            h.dataset.index = i;
-            chapterList.appendChild(h);
-          } else if (/^data:image\//.test(trimmed) || /\.(jpg|jpeg|png|gif)$/i.test(trimmed)) {
-            const img = document.createElement('img');
-            img.src = trimmed;
-            img.alt = `Image ${i+1}`;
-            img.style.maxWidth = '100%';
-            img.style.display = 'block';
-            img.style.margin = '1.5em auto';
-            img.dataset.index = i;
-            chapterList.appendChild(img);
-          } else {
-            const p = document.createElement('p');
-            p.textContent = c;
-            p.dataset.index = i;
-            chapterList.appendChild(p);
-          }
-        });
+        renderChapterContent(chunks);
         statusDiv.textContent = '';
-        chapterList.scrollTop = 0;
-        // After loading, re-run search if a term is present
-        if (searchInput && searchInput.value && searchInput.value.length > 1) {
-          highlightSearch(searchInput.value);
-        }
-        // Force EPUB content into view after DOM update
+        epubContent.scrollTop = 0;
         setTimeout(() => {
-          const reader = document.getElementById('reader');
-          if (reader) reader.scrollIntoView({ behavior: 'auto', block: 'start' });
+          epubContent.scrollIntoView({ behavior: 'auto', block: 'start' });
           window.scrollTo({ top: 0, behavior: 'auto' });
-        }, 300);
+        }, 200);
       } catch (err) {
         statusDiv.textContent = 'Error loading chapter.';
       }
     }
 
-    // Update chapter click logic to load chapter on demand
-    chapterList.addEventListener('click', e => {
-      if (e.target.tagName !== 'LI') return;
-      const fileName = e.target.dataset.fileName;
-      if (fileName) {
-        loadAndDisplayChapter(fileName);
-      }
-      if (window.innerWidth < 700) closeSidebar();
-    });
+    // Remove event delegation for chapterList (now handled inline)
     // Word-level highlighting (best effort)
     let wordTimer = null;
     function playChunk(i) {
@@ -624,76 +616,71 @@
       if (old) old.remove();
       var overlay = document.createElement('div');
       overlay.id = 'settingsOverlayDynamic';
-      overlay.className = "fixed inset-0 z-[9999] bg-black/40 flex items-center justify-center";
-      overlay.style.backdropFilter = "blur(2px)";
+      overlay.className = "settings-modal-overlay";
       overlay.innerHTML = `
-        <div id="settingsPanelModalDynamic" tabindex="0" class="w-full max-w-md mx-auto rounded-2xl shadow-2xl bg-white/95 backdrop-blur-lg border border-gray-100 p-0 overflow-hidden font-sans relative outline-none" role="dialog" aria-modal="true">
-          <button id="settingsPanelCloseBtnDynamic" type="button" class="absolute top-3 right-3 text-gray-500 hover:text-blue-600 text-2xl font-bold" aria-label="Close settings">&times;</button>
-          <header class="w-full py-4 px-6 border-b border-gray-100 bg-gray-50 flex items-center justify-between"><h2 class="font-semibold text-lg tracking-wide text-gray-900">Reading Settings</h2></header>
-          <main class="p-6 space-y-7">
-            <section id="settingsPreview" class="rounded-xl transition-all duration-200 shadow-inner px-6 py-4 border bg-white text-gray-900 font-serif" style="font-size:1.1em;line-height:1.75;letter-spacing:0em;word-spacing:0em;margin:1.5em;text-align:justify;"><div class="mb-1 text-[0.95em] opacity-70 font-medium">Chapter One</div><div>The quick brown fox jumps over the lazy dog. “Reading should be a joy, not a chore,” she thought, as she adjusted her book’s settings.</div></section>
-            <div class="space-y-6">
-              <!-- Text Size Slider -->
+        <div id="settingsPanelModalDynamic" tabindex="0" class="settings-modal-card" role="dialog" aria-modal="true">
+          <button id="settingsPanelCloseBtnDynamic" type="button" class="settings-modal-close" aria-label="Close settings">&times;</button>
+          <header class="settings-modal-header"><h2 class="settings-modal-title">Reading Settings</h2></header>
+          <main class="settings-modal-main">
+            <section id="settingsPreview" class="settings-modal-preview"><div class="mb-1 text-[0.95em] opacity-70 font-medium">Chapter One</div><div>The quick brown fox jumps over the lazy dog. “Reading should be a joy, not a chore,” she thought, as she adjusted her book’s settings.</div></section>
+            <div class="settings-modal-controls">
               <div>
-                <label for="textSizeSlider" class="block text-sm font-medium text-gray-700 mb-1">Text Size</label>
-                <input type="range" id="textSizeSlider" min="0.8" max="2" step="0.01" value="1.1" class="w-full accent-blue-500" aria-label="Text size"/>
-                <div class="flex justify-between text-xs mt-1 text-gray-400">
+                <label for="textSizeSlider" class="settings-modal-label">Text Size</label>
+                <input type="range" id="textSizeSlider" min="0.8" max="2" step="0.01" value="1.1" class="settings-modal-slider" aria-label="Text size"/>
+                <div class="settings-modal-slider-labels">
                   <span>Very Small</span><span>Very Large</span>
                 </div>
               </div>
-              <!-- Theme Selector -->
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Theme</label>
-                <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  <button type="button" class="theme-btn rounded-lg border p-2 flex flex-col items-center gap-1 bg-white text-black font-serif border-gray-300" data-theme="normal" aria-label="Normal"><span class="block w-6 h-6 rounded bg-white border"></span>Normal</button>
-                  <button type="button" class="theme-btn rounded-lg border p-2 flex flex-col items-center gap-1 bg-[#f7ecd9] text-[#5a3a1b] font-serif border-gray-300" data-theme="soft" aria-label="Soft"><span class="block w-6 h-6 rounded bg-[#f7ecd9] border"></span>Soft</button>
-                  <button type="button" class="theme-btn rounded-lg border p-2 flex flex-col items-center gap-1 bg-white text-black font-serif border-gray-300 font-bold" data-theme="bold" aria-label="Bold"><span class="block w-6 h-6 rounded bg-white border"></span>Bold</button>
-                  <button type="button" class="theme-btn rounded-lg border p-2 flex flex-col items-center gap-1 bg-gray-100 text-gray-700 font-serif border-gray-300" data-theme="gray" aria-label="Gray"><span class="block w-6 h-6 rounded bg-gray-100 border"></span>Gray</button>
-                  <button type="button" class="theme-btn rounded-lg border p-2 flex flex-col items-center gap-1 bg-black text-gray-200 font-serif border-gray-300" data-theme="quiet" aria-label="Quiet"><span class="block w-6 h-6 rounded bg-black border"></span>Quiet</button>
-                  <button type="button" class="theme-btn rounded-lg border p-2 flex flex-col items-center gap-1 bg-[#f5e6d3] text-[#7b5a36] font-serif border-gray-300" data-theme="sepia" aria-label="Sepia"><span class="block w-6 h-6 rounded bg-[#f5e6d3] border"></span>Sepia</button>
+                <label class="settings-modal-label">Theme</label>
+                <div class="settings-modal-theme-grid">
+                  <button type="button" class="theme-btn" data-theme="normal" aria-label="Normal"><span class="settings-modal-theme-sample" style="background:#fff;"></span>Normal</button>
+                  <button type="button" class="theme-btn" data-theme="soft" aria-label="Soft"><span class="settings-modal-theme-sample" style="background:#f7ecd9;"></span>Soft</button>
+                  <button type="button" class="theme-btn" data-theme="bold" aria-label="Bold"><span class="settings-modal-theme-sample" style="background:#fff;"></span>Bold</button>
+                  <button type="button" class="theme-btn" data-theme="gray" aria-label="Gray"><span class="settings-modal-theme-sample" style="background:#f3f4f6;"></span>Gray</button>
+                  <button type="button" class="theme-btn" data-theme="quiet" aria-label="Quiet"><span class="settings-modal-theme-sample" style="background:#000;"></span>Quiet</button>
+                  <button type="button" class="theme-btn" data-theme="sepia" aria-label="Sepia"><span class="settings-modal-theme-sample" style="background:#f5e6d3;"></span>Sepia</button>
                 </div>
               </div>
-              <!-- Further Customization Button -->
               <div>
-                <button id="furtherCustomizationBtn" type="button" class="w-full mt-2 py-2 px-4 rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-700 font-semibold transition">Further Customization</button>
-                <div id="furtherCustomizationPanel" class="hidden mt-4 space-y-4">
-                  <div class="flex items-center justify-between">
-                    <label for="boldTextToggle" class="text-sm font-medium text-gray-700">Bold Text</label>
-                    <input type="checkbox" id="boldTextToggle" class="accent-blue-500"/>
+                <button id="furtherCustomizationBtn" type="button" class="settings-modal-further-btn">Further Customization</button>
+                <div id="furtherCustomizationPanel" class="settings-modal-further-panel hidden">
+                  <div class="settings-modal-row">
+                    <label for="boldTextToggle" class="settings-modal-label">Bold Text</label>
+                    <input type="checkbox" id="boldTextToggle" class="settings-modal-checkbox"/>
                   </div>
                   <div>
-                    <label for="lineSpacingSlider" class="block text-sm font-medium text-gray-700 mb-1">Line Spacing</label>
-                    <input type="range" id="lineSpacingSlider" min="1" max="2.5" step="0.01" value="1.75" class="w-full accent-blue-500" aria-label="Line spacing"/>
+                    <label for="lineSpacingSlider" class="settings-modal-label">Line Spacing</label>
+                    <input type="range" id="lineSpacingSlider" min="1" max="2.5" step="0.01" value="1.75" class="settings-modal-slider" aria-label="Line spacing"/>
                   </div>
                   <div>
-                    <label for="charSpacingSlider" class="block text-sm font-medium text-gray-700 mb-1">Character Spacing</label>
-                    <input type="range" id="charSpacingSlider" min="0" max="0.2" step="0.001" value="0" class="w-full accent-blue-500" aria-label="Character spacing"/>
+                    <label for="charSpacingSlider" class="settings-modal-label">Character Spacing</label>
+                    <input type="range" id="charSpacingSlider" min="0" max="0.2" step="0.001" value="0" class="settings-modal-slider" aria-label="Character spacing"/>
                   </div>
                   <div>
-                    <label for="wordSpacingSlider" class="block text-sm font-medium text-gray-700 mb-1">Word Spacing</label>
-                    <input type="range" id="wordSpacingSlider" min="0" max="1" step="0.01" value="0" class="w-full accent-blue-500" aria-label="Word spacing"/>
+                    <label for="wordSpacingSlider" class="settings-modal-label">Word Spacing</label>
+                    <input type="range" id="wordSpacingSlider" min="0" max="1" step="0.01" value="0" class="settings-modal-slider" aria-label="Word spacing"/>
                   </div>
                   <div>
-                    <label for="marginSizeSlider" class="block text-sm font-medium text-gray-700 mb-1">Margin Size</label>
-                    <input type="range" id="marginSizeSlider" min="0.5" max="4" step="0.01" value="1.5" class="w-full accent-blue-500" aria-label="Margin size"/>
+                    <label for="marginSizeSlider" class="settings-modal-label">Margin Size</label>
+                    <input type="range" id="marginSizeSlider" min="0.5" max="4" step="0.01" value="1.5" class="settings-modal-slider" aria-label="Margin size"/>
                   </div>
-                  <div class="flex items-center justify-between">
-                    <label for="justifyTextToggle" class="text-sm font-medium text-gray-700">Justify Text</label>
-                    <input type="checkbox" id="justifyTextToggle" class="accent-blue-500" checked/>
+                  <div class="settings-modal-row">
+                    <label for="justifyTextToggle" class="settings-modal-label">Justify Text</label>
+                    <input type="checkbox" id="justifyTextToggle" class="settings-modal-checkbox" checked/>
                   </div>
                 </div>
               </div>
             </div>
-            <div class="my-2 text-xs text-gray-500">Close with ×, Escape, or click outside.</div>
+            <div class="settings-modal-footer">Close with ×, Escape, or tap outside.</div>
           </main>
         </div>
       `;
       document.body.appendChild(overlay);
-      document.body.style.overflow = "hidden";
+      setTimeout(() => overlay.classList.add('open'), 10);
       function closePanel() {
-        overlay.remove();
-        document.body.style.overflow = "";
-        document.removeEventListener("keydown", keydownHandler);
+        overlay.classList.remove('open');
+        setTimeout(() => { overlay.remove(); }, 250);
       }
       overlay.querySelector('#settingsPanelCloseBtnDynamic').onclick = closePanel;
       overlay.onclick = (e) => { if (e.target === overlay) closePanel(); };
@@ -702,21 +689,18 @@
       setTimeout(()=>{ var modal = overlay.querySelector('#settingsPanelModalDynamic'); if (modal) modal.focus(); }, 25);
       // --- Settings Panel Interactivity ---
       const preview = overlay.querySelector('#settingsPreview');
-      // Helper to apply a style to both preview and reader
       function applyStyle(prop, value) {
         preview.style[prop] = value;
+        if (epubContent) epubContent.style[prop] = value;
       }
-      // Text Size
       overlay.querySelector('#textSizeSlider').oninput = function(e) {
         applyStyle('fontSize', e.target.value + 'em');
       };
-      // Theme Selector
       overlay.querySelectorAll('.theme-btn').forEach(btn => {
         btn.onclick = function() {
           overlay.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('ring-2','ring-blue-500'));
           btn.classList.add('ring-2','ring-blue-500');
           const theme = btn.getAttribute('data-theme');
-          // Theme styles
           const themes = {
             normal:  { bg:'#fff', color:'#222', font:'serif', fontWeight:'normal' },
             soft:    { bg:'#f7ecd9', color:'#5a3a1b', font:'serif', fontWeight:'normal' },
@@ -730,42 +714,41 @@
           preview.style.color = t.color;
           preview.style.fontFamily = t.font === 'serif' ? 'Georgia, Times New Roman, serif' : 'Inter, Arial, sans-serif';
           preview.style.fontWeight = t.fontWeight;
+          if (epubContent) {
+            epubContent.style.background = t.bg;
+            epubContent.style.color = t.color;
+            epubContent.style.fontFamily = t.font === 'serif' ? 'Georgia, Times New Roman, serif' : 'Inter, Arial, sans-serif';
+            epubContent.style.fontWeight = t.fontWeight;
+          }
         };
       });
-      // Further Customization
       const furtherBtn = overlay.querySelector('#furtherCustomizationBtn');
       const furtherPanel = overlay.querySelector('#furtherCustomizationPanel');
       furtherBtn.onclick = function() {
         furtherPanel.classList.toggle('hidden');
         furtherBtn.classList.toggle('bg-blue-200');
       };
-      // Bold Text
       overlay.querySelector('#boldTextToggle').oninput = function(e) {
         applyStyle('fontWeight', e.target.checked ? 'bold' : '');
       };
-      // Line Spacing
       overlay.querySelector('#lineSpacingSlider').oninput = function(e) {
         applyStyle('lineHeight', e.target.value);
       };
-      // Character Spacing
       overlay.querySelector('#charSpacingSlider').oninput = function(e) {
         applyStyle('letterSpacing', e.target.value + 'em');
       };
-      // Word Spacing
       overlay.querySelector('#wordSpacingSlider').oninput = function(e) {
         applyStyle('wordSpacing', e.target.value + 'em');
       };
-      // Margin Size
       overlay.querySelector('#marginSizeSlider').oninput = function(e) {
         applyStyle('margin', e.target.value + 'em');
       };
-      // Justify Text
       overlay.querySelector('#justifyTextToggle').oninput = function(e) {
         applyStyle('textAlign', e.target.checked ? 'justify' : 'left');
       };
     };
 
-    // SEARCH LOGIC
+    // SEARCH LOGIC (fixed for #epubContent)
     let searchMatches = [];
     let currentMatchIdx = -1;
     const searchInput = document.getElementById('searchInput');
@@ -774,13 +757,13 @@
     const searchCount = document.getElementById('searchCount');
     function clearSearchHighlights() {
       // Remove word-level highlight spans first
-      document.querySelectorAll('#reader .word').forEach(el => {
+      document.querySelectorAll('#epubContent .word').forEach(el => {
         const parent = el.parentNode;
         parent.replaceChild(document.createTextNode(el.textContent), el);
         parent.normalize();
       });
       // Remove search highlight spans
-      document.querySelectorAll('#reader .search-highlight').forEach(el => {
+      document.querySelectorAll('#epubContent .search-highlight').forEach(el => {
         const parent = el.parentNode;
         parent.replaceChild(document.createTextNode(el.textContent), el);
         parent.normalize();
@@ -793,7 +776,7 @@
       clearSearchHighlights();
       if (!term || term.length < 2) return;
       const regex = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
-      const walker = document.createTreeWalker(document.getElementById('reader'), NodeFilter.SHOW_TEXT, null);
+      const walker = document.createTreeWalker(document.getElementById('epubContent'), NodeFilter.SHOW_TEXT, null);
       let node;
       let found = false;
       while ((node = walker.nextNode())) {
