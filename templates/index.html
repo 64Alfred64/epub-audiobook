@@ -233,7 +233,8 @@
     <div class="sidebar row-span-2 h-full w-[280px] bg-black border-r border-[#333] overflow-y-auto p-5 z-[1101] transition-transform duration-300 -translate-x-full md:translate-x-0 fixed md:static top-0 left-0" id="sidebar">
       <div class="sidebar-header flex items-center gap-2 mb-4">
         <button class="back-button control-btn">&lt;</button>
-        <h2 class="book-title flex-1 text-lg font-bold text-white">Book Title</h2>
+        <img id="sidebarCover" src="" alt="Book cover" style="width:56px;height:80px;object-fit:cover;border-radius:6px;background:#222;display:none;margin-right:0.75em;"/>
+        <h2 class="book-title flex-1 text-lg font-bold text-white" id="sidebarBookTitle">Book Title</h2>
         <button class="menu-button control-btn">⋯</button>
       </div>
       <div class="chapter-list">
@@ -253,7 +254,16 @@
       <div id="status" style="font-size:0.95rem;color:#bbb;margin-left:16px;"></div>
     </div>
     <div class="main-content col-start-2 row-start-1 bg-black text-white pb-0 pr-0 pl-0 flex flex-col h-full transition-all duration-300" id="mainContent" style="margin-top:60px;">
-      <div id="textDisplay" style="flex:1 1 auto; overflow-y:auto; min-height:0; max-height:calc(100vh - 60px - 112px); padding: 0 1.5rem;"> </div>
+      <div id="searchBarContainer" style="width:100%;max-width:900px;margin:0 auto 0.5em auto;display:flex;align-items:center;gap:0.5em;padding:0.5em 0.5em 0 0.5em;position:relative;z-index:2;">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:2em;height:2em;color:#aaa;font-size:1.2em;">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+        </span>
+        <input id="searchInput" type="text" placeholder="Search in book..." style="flex:1 1 auto;min-width:0;background:#23232a;color:#fff;border:1px solid #444;border-radius:4px;padding:0.5em 1em;font-size:1em;outline:none;"/>
+        <button id="searchPrevBtn" title="Previous match" style="background:#23232a;color:#aaa;border:none;border-radius:4px;padding:0.4em 0.7em;font-size:1em;cursor:pointer;">&#8593;</button>
+        <button id="searchNextBtn" title="Next match" style="background:#23232a;color:#aaa;border:none;border-radius:4px;padding:0.4em 0.7em;font-size:1em;cursor:pointer;">&#8595;</button>
+        <span id="searchCount" style="color:#aaa;font-size:0.95em;margin-left:0.5em;"></span>
+      </div>
+      <div id="textDisplay" style="flex:1 1 auto;overflow-y:auto;min-height:0;max-height:calc(100vh - 60px - 112px);padding:0 1.5rem;"> </div>
     </div>
     <div class="media-controls col-span-2 row-start-2 w-full bg-black border-t border-[#333] p-4 z-[1000] flex flex-col gap-2" id="mediaControls" style="position:sticky; bottom:0; left:0; right:0;">
       <div class="progress-container flex items-center gap-3 mb-2">
@@ -266,7 +276,7 @@
       </div>
       <div class="control-buttons flex items-center justify-between">
         <div class="media-info flex items-center gap-3">
-          <img class="book-cover w-10 h-10 rounded object-cover bg-[#222]" src="" alt="Book cover" id="bookCover"/>
+          <img class="book-cover w-10 h-10 rounded object-cover bg-[#222]" src="" alt="Book cover" id="mediaBookCover"/>
           <div class="book-details flex flex-col">
             <span class="book-title text-sm font-semibold text-white" id="mediaBookTitle">Book Title</span>
             <span class="narrator text-xs text-gray-400" id="mediaNarrator">Read by Narrator</span>
@@ -386,6 +396,21 @@
       uploadId = data.upload_id;
       chunks   = data.text_chunks;
       let chapters = data.chapters || [];
+      // Update book title and cover image
+      const bookTitle = data.book_title || 'Untitled EPUB';
+      document.getElementById('sidebarBookTitle').textContent = bookTitle;
+      document.getElementById('mediaBookTitle').textContent = bookTitle;
+      if (data.cover_image) {
+        document.getElementById('sidebarCover').src = data.cover_image;
+        document.getElementById('sidebarCover').style.display = '';
+        document.getElementById('mediaBookCover').src = data.cover_image;
+        document.getElementById('mediaBookCover').style.display = '';
+      } else {
+        document.getElementById('sidebarCover').src = '';
+        document.getElementById('sidebarCover').style.display = 'none';
+        document.getElementById('mediaBookCover').src = '';
+        document.getElementById('mediaBookCover').style.display = 'none';
+      }
       if (!chapters || chapters.length === 0) {
         chapters = [];
         function looksLikeChapter(text) {
@@ -752,6 +777,83 @@
         applyStyle('textAlign', e.target.checked ? 'justify' : 'left');
       };
     };
+
+    // SEARCH LOGIC
+    let searchMatches = [];
+    let currentMatchIdx = -1;
+    const searchInput = document.getElementById('searchInput');
+    const searchPrevBtn = document.getElementById('searchPrevBtn');
+    const searchNextBtn = document.getElementById('searchNextBtn');
+    const searchCount = document.getElementById('searchCount');
+    function clearSearchHighlights() {
+      document.querySelectorAll('#textDisplay .search-highlight').forEach(el => {
+        const parent = el.parentNode;
+        parent.replaceChild(document.createTextNode(el.textContent), el);
+        parent.normalize();
+      });
+      searchMatches = [];
+      currentMatchIdx = -1;
+      searchCount.textContent = '';
+    }
+    function highlightSearch(term) {
+      clearSearchHighlights();
+      if (!term || term.length < 2) return;
+      const regex = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+      const walker = document.createTreeWalker(document.getElementById('textDisplay'), NodeFilter.SHOW_TEXT, null);
+      let node;
+      while ((node = walker.nextNode())) {
+        if (node.parentNode && node.parentNode.closest('.search-highlight')) continue;
+        let match;
+        let lastIndex = 0;
+        const text = node.textContent;
+        let newNodes = [];
+        while ((match = regex.exec(text))) {
+          if (match.index > lastIndex) {
+            newNodes.push(document.createTextNode(text.slice(lastIndex, match.index)));
+          }
+          const span = document.createElement('span');
+          span.className = 'search-highlight';
+          span.textContent = match[0];
+          span.style.background = 'rgba(255, 230, 0, 0.5)';
+          span.style.color = '#222';
+          newNodes.push(span);
+          searchMatches.push(span);
+          lastIndex = match.index + match[0].length;
+        }
+        if (lastIndex < text.length) {
+          newNodes.push(document.createTextNode(text.slice(lastIndex)));
+        }
+        if (newNodes.length) {
+          newNodes.forEach(n => node.parentNode.insertBefore(n, node));
+          node.parentNode.removeChild(node);
+        }
+      }
+      if (searchMatches.length) {
+        currentMatchIdx = 0;
+        updateSearchHighlight();
+      }
+      searchCount.textContent = searchMatches.length ? `${currentMatchIdx+1}/${searchMatches.length}` : '0/0';
+    }
+    function updateSearchHighlight() {
+      searchMatches.forEach((el, i) => {
+        el.style.outline = i === currentMatchIdx ? '2px solid #2563eb' : '';
+        el.scrollIntoView({behavior:'smooth', block:'center'});
+      });
+      searchCount.textContent = searchMatches.length ? `${currentMatchIdx+1}/${searchMatches.length}` : '0/0';
+    }
+    searchInput.addEventListener('input', e => {
+      highlightSearch(e.target.value);
+    });
+    searchPrevBtn.addEventListener('click', () => {
+      if (!searchMatches.length) return;
+      currentMatchIdx = (currentMatchIdx - 1 + searchMatches.length) % searchMatches.length;
+      updateSearchHighlight();
+    });
+    searchNextBtn.addEventListener('click', () => {
+      if (!searchMatches.length) return;
+      currentMatchIdx = (currentMatchIdx + 1) % searchMatches.length;
+      updateSearchHighlight();
+    });
   </script>
 </body>
 </html>
