@@ -11,8 +11,8 @@ from bs4 import BeautifulSoup
 app = Flask(__name__)
 CORS(app)
 
-UPLOAD_FOLDER = 'uploads'
-AUDIO_FOLDER = 'audio_chunks'
+UPLOAD_FOLDER = '/tmp/uploads'
+AUDIO_FOLDER = '/tmp/audio_chunks'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(AUDIO_FOLDER, exist_ok=True)
 
@@ -104,6 +104,5 @@ def get_audio(filename):
     return send_from_directory(AUDIO_FOLDER, filename)
 
 if __name__ == '__main__':
-    import os
     port = int(os.environ.get('PORT', 5000))
     app.run(debug=True, host='0.0.0.0', port=port)
