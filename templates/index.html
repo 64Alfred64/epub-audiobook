@@ -257,7 +257,6 @@
       <div id="status" style="font-size:0.95rem;color:#bbb;margin-left:16px;"></div>
     </div>
     <div class="main-content col-start-2 row-start-1 bg-black text-white pb-0 pr-0 pl-0 flex flex-col h-full transition-all duration-300" id="mainContent" style="margin-top:60px;">
-      <div id="reader" style="display:block;visibility:visible;min-height:120px;height:auto;max-height:calc(100vh - 60px - 112px);padding:0 1.5rem;border:2px solid #4c8bf5;box-sizing:border-box;margin:0;"> </div>
       <div id="searchBarContainer" style="width:100%;max-width:900px;margin:0 auto 0.5em auto;display:flex;align-items:center;gap:0.5em;padding:0.5em 0.5em 0 0.5em;position:relative;z-index:2;">
         <span style="display:inline-flex;align-items:center;justify-content:center;width:2em;height:2em;color:#aaa;font-size:1.2em;">
           <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
@@ -352,7 +351,6 @@
     // EPUB logic + audio player
     const chapterList = document.getElementById('chapterList');
     const form        = document.getElementById('uploadForm');
-    const textDiv     = document.getElementById('reader');
     const statusDiv   = document.getElementById('status');
     const voiceSelect = document.getElementById('voiceSelect');
     const mainAudio   = document.getElementById('mainAudio');
@@ -386,7 +384,6 @@
     form.addEventListener('submit', async e => {
       e.preventDefault();
       statusDiv.textContent = 'Extracting text…';
-      textDiv.innerHTML = '';
       chapterList.innerHTML = '';
       cache = {};
       const fd = new FormData(form);
@@ -437,7 +434,7 @@
     async function loadAndDisplayChapter(fileName) {
       if (!uploadId || !fileName) return;
       statusDiv.textContent = 'Loading chapter...';
-      textDiv.innerHTML = '';
+      chapterList.innerHTML = '';
       try {
         const res = await fetch('/chapter', {
           method: 'POST',
@@ -457,7 +454,7 @@
             const h = document.createElement('h2');
             h.textContent = trimmed;
             h.dataset.index = i;
-            textDiv.appendChild(h);
+            chapterList.appendChild(h);
           } else if (/^data:image\//.test(trimmed) || /\.(jpg|jpeg|png|gif)$/i.test(trimmed)) {
             const img = document.createElement('img');
             img.src = trimmed;
@@ -466,16 +463,16 @@
             img.style.display = 'block';
             img.style.margin = '1.5em auto';
             img.dataset.index = i;
-            textDiv.appendChild(img);
+            chapterList.appendChild(img);
           } else {
             const p = document.createElement('p');
             p.textContent = c;
             p.dataset.index = i;
-            textDiv.appendChild(p);
+            chapterList.appendChild(p);
           }
         });
         statusDiv.textContent = '';
-        textDiv.scrollTop = 0;
+        chapterList.scrollTop = 0;
         // After loading, re-run search if a term is present
         if (searchInput && searchInput.value && searchInput.value.length > 1) {
           highlightSearch(searchInput.value);
@@ -500,35 +497,11 @@
       }
       if (window.innerWidth < 700) closeSidebar();
     });
-    textDiv.addEventListener('click', e => {
-      if (e.target.tagName !== 'P' && e.target.tagName !== 'H2') return;
-      startSequence(+e.target.dataset.index);
-    });
-    function fetchChunk(i) {
-      if (cache[i]) return Promise.resolve(cache[i]);
-      return fetch('/chunk', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ upload_id: uploadId, index: i })
-      })
-      .then(r => r.ok ? r.blob() : Promise.reject(r.statusText))
-      .then(blob => {
-        const url = URL.createObjectURL(blob);
-        cache[i] = url;
-        return url;
-      });
-    }
-    function startSequence(idx) {
-      playingSeq = true;
-      currentIdx = idx;
-      mediaNarrator.textContent = (voiceSelect.value ? `Read by ${voiceSelect.value}` : 'Read by Jenny');
-      playChunk(idx);
-    }
     // Word-level highlighting (best effort)
     let wordTimer = null;
     function playChunk(i) {
       // Remove previous highlights
-      textDiv.querySelectorAll('p, h2').forEach(p => {
+      chapterList.querySelectorAll('p, h2').forEach(p => {
         p.classList.remove('highlight');
         // Remove word highlight spans if present
         if (p.dataset.wordsplit === '1') {
@@ -536,10 +509,10 @@
           p.dataset.wordsplit = '';
         }
       });
-      const el = textDiv.querySelector(`[data-index="${i}"]`);
+      const el = chapterList.querySelector(`[data-index="${i}"]`);
       if (el) {
         el.classList.add('highlight');
-        scrollElementIntoContainer(el, textDiv);
+        scrollElementIntoContainer(el, chapterList);
         // Word-level highlight for <p> only
         if (el.tagName === 'P') {
           const words = el.textContent.split(/(\s+)/);
@@ -729,11 +702,9 @@
       setTimeout(()=>{ var modal = overlay.querySelector('#settingsPanelModalDynamic'); if (modal) modal.focus(); }, 25);
       // --- Settings Panel Interactivity ---
       const preview = overlay.querySelector('#settingsPreview');
-      const reader = document.getElementById('reader');
       // Helper to apply a style to both preview and reader
       function applyStyle(prop, value) {
         preview.style[prop] = value;
-        if (reader) reader.style[prop] = value;
       }
       // Text Size
       overlay.querySelector('#textSizeSlider').oninput = function(e) {
@@ -759,12 +730,6 @@
           preview.style.color = t.color;
           preview.style.fontFamily = t.font === 'serif' ? 'Georgia, Times New Roman, serif' : 'Inter, Arial, sans-serif';
           preview.style.fontWeight = t.fontWeight;
-          if (reader) {
-            reader.style.background = t.bg;
-            reader.style.color = t.color;
-            reader.style.fontFamily = t.font === 'serif' ? 'Georgia, Times New Roman, serif' : 'Inter, Arial, sans-serif';
-            reader.style.fontWeight = t.fontWeight;
-          }
         };
       });
       // Further Customization
