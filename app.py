@@ -23,16 +23,6 @@ def clean_text(text):
     text = text.replace('\u200b', '').replace('\xa0', ' ')
     return re.sub(r'[^\x00-\x7F]+', ' ', text)
 
-def extract_epub_text(path):
-    book = epub.read_epub(path)
-    title_meta = book.get_metadata('DC', 'title')
-    title = title_meta[0][0] if title_meta else "Untitled EPUB"
-    full_text = ""
-    for doc in book.get_items_of_type(ITEM_DOCUMENT):
-        soup = BeautifulSoup(doc.get_body_content(), 'html.parser')
-        full_text += soup.get_text(separator=' ', strip=True) + " "
-    return title, clean_text(full_text)
-
 def chunk_text(text, max_chars=500):
     sentences = re.split(r'(?<=[.?!])\s+', text)
     chunks, current = [], ""
@@ -40,23 +30,86 @@ def chunk_text(text, max_chars=500):
         if len(current) + len(s) + 1 <= max_chars:
             current = f"{current} {s}".strip()
         else:
-            chunks.append(current)
+            if current:
+                chunks.append(current)
             current = s
     if current:
         chunks.append(current)
     return chunks
 
-# ← UPDATED TTS FUNCTIONS ↓
+def extract_epub_chapters(path):
+    book = epub.read_epub(path)
+    title_meta = book.get_metadata('DC', 'title')
+    title = title_meta[0][0] if title_meta else "Untitled EPUB"
+
+    # Build a map of id -> document for quick lookup
+    doc_map = {item.get_id(): item for item in book.get_items_of_type(ITEM_DOCUMENT)}
+    chapters = []
+    chapter_texts = []
+
+    # EPUB TOC parsing: get chapter names and hrefs
+    toc = book.toc
+    def flatten_toc(toc_items):
+        for item in toc_items:
+            if isinstance(item, epub.Link):
+                yield item
+            elif isinstance(item, tuple) and hasattr(item[0], 'title'):
+                # Nested section (e.g., parts with chapters)
+                yield item[0]
+                yield from flatten_toc(item[1])
+            elif hasattr(item, 'title'):
+                yield item
+
+    chapter_refs = []
+    for entry in flatten_toc(toc):
+        if hasattr(entry, 'href'):
+            chapter_refs.append((entry.title, entry.href.split('#')[0]))
+
+    seen = set()
+    for chap_title, chap_href in chapter_refs:
+        # Only process each doc once (some books have repeated hrefs)
+        if chap_href in seen:
+            continue
+        seen.add(chap_href)
+        # Find the document with that href
+        for item in doc_map.values():
+            if item.file_name.endswith(chap_href):
+                soup = BeautifulSoup(item.get_body_content(), 'html.parser')
+                text = clean_text(soup.get_text(separator=' ', strip=True))
+                if text.strip():
+                    chapters.append({'title': chap_title, 'file_name': item.file_name})
+                    chapter_texts.append((chap_title, text))
+                break
+
+    # Fallback if TOC fails: use all documents
+    if not chapter_texts:
+        for item in book.get_items_of_type(ITEM_DOCUMENT):
+            soup = BeautifulSoup(item.get_body_content(), 'html.parser')
+            text = clean_text(soup.get_text(separator=' ', strip=True))
+            if text.strip():
+                chapters.append({'title': getattr(item, 'get_name', lambda: item.get_id())(), 'file_name': item.file_name})
+                chapter_texts.append((item.get_id(), text))
+
+    # Chunk and map chapter titles to chunk indices
+    all_chunks = []
+    chapter_indices = []
+    for title, text in chapter_texts:
+        start_idx = len(all_chunks)
+        ch_chunks = chunk_text(text)
+        if ch_chunks:
+            chapter_indices.append({'title': title, 'index': start_idx})
+            all_chunks.extend(ch_chunks)
+
+    return title, all_chunks, chapter_indices
+
+# ← TTS functions stay the same ↓
 
 async def synthesize(text, out_path, voice):
-    # Use Communicate.save to write the mp3 directly
     comm = Communicate(text=text, voice=voice)
     await comm.save(out_path)
 
 def run_tts(text, out_path, voice):
     return asyncio.run(synthesize(text, out_path, voice))
-
-# ← end updated TTS
 
 @app.route('/')
 def index():
@@ -74,14 +127,14 @@ def upload_epub():
     f.save(epub_path)
 
     try:
-        title, text = extract_epub_text(epub_path)
-        chunks = chunk_text(text)
+        title, chunks, chapters = extract_epub_chapters(epub_path)
     except Exception as e:
         traceback.print_exc()
         return jsonify(error="Failed to extract text", details=str(e)), 500
 
     uploads[uid] = {'chunks': chunks, 'voice': voice}
-    return jsonify(upload_id=uid, text_chunks=chunks)
+    # Now also return chapters = list of {title, index}
+    return jsonify(upload_id=uid, text_chunks=chunks, chapters=chapters)
 
 @app.route('/chunk', methods=['POST'])
 def get_chunk():
