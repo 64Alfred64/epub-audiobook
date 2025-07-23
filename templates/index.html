@@ -136,7 +136,7 @@ button:hover {
 
 /* AUDIO PLAYER */
 .eleven-player {
-  display: none;
+  display: flex;
   align-items: center;
   background: #1f1f1f;
   padding: 0.75rem 1rem;
@@ -266,7 +266,7 @@ button:hover {
     statusDiv.textContent = 'Extracting text…';
     textDiv.innerHTML = '';
     chapterList.innerHTML = '';
-    player.style.display = 'none';
+    player.style.display = 'flex';
     cache = {};
 
     const fd = new FormData(form);
