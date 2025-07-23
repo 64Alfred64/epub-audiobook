@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>EPUB Audio Reader</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"/>
+  <!-- Tailwind CDN -->
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css" rel="stylesheet">
   <style>
     body {
@@ -132,12 +133,6 @@
         margin-left: 250px;
         width: calc(100vw - 250px);
       }
-      #hamburger {
-        display: none;
-      }
-      #sidebar-overlay {
-        display: none !important;
-      }
     }
     #textDisplay {
       margin: 3em auto 0 auto;
@@ -185,100 +180,21 @@
         border-radius: 0;
       }
     }
-    .audio-bar-bottom {
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      width: 100vw;
-      background: #181818;
-      box-shadow: 0 -2px 16px rgba(0,0,0,0.6);
-      z-index: 2000;
-      display: flex;
-      align-items: center;
-      padding: 0.5em 1em;
-      gap: 0.5em;
-      min-height: 56px;
-      max-width: 100vw;
-    }
-    .audio-bar-bottom .progress-group {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      min-width: 0;
-    }
-    .audio-bar-bottom .progress {
-      flex: 1;
-      height: 4px;
-      background: #333;
-      border-radius: 2px;
-      -webkit-appearance: none;
-      cursor: pointer;
-      min-width: 0;
-    }
-    .audio-bar-bottom .progress::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 12px;
-      height: 12px;
-      background: #4c8bf5;
-      border-radius: 50%;
-      margin-top: -4px;
-    }
-    .audio-bar-bottom button, .audio-bar-bottom select {
-      background: #292929;
-      border: none;
-      color: #fff;
-      border-radius: 6px;
-      padding: 0.4rem 0.7rem;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: background 0.2s;
-      margin: 0 .15em;
-    }
-    .audio-bar-bottom button:hover, .audio-bar-bottom select:hover {
-      background: #3a3a3a;
-    }
-    .audio-bar-bottom select {
-      font-size: 1rem;
-      padding-right: 2em;
-    }
-    .audio-bar-bottom .voice-label {
-      margin-left: .5em;
-      font-size: 1em;
-      color: #bbb;
-      min-width: 60px;
-      text-align: right;
-    }
-    .audio-bar-bottom .time {
-      width: 2.5rem;
-      text-align: center;
-      font-size: 0.95em;
-      color: #aaa;
-      flex-shrink: 0;
+    .eleven-player { display: none !important; }
+    /* For bottom bar padding (make room so it's not covered) */
+    #main {
+      padding-bottom: 4.5rem;
     }
     @media (max-width: 700px) {
-      .audio-bar-bottom {
-        padding: 0.3em 0.2em;
-        min-height: 48px;
-      }
       #main {
-        padding-bottom: 56px;
+        padding-bottom: 4.5rem;
       }
     }
-    @media (min-width: 700px) {
-      .audio-bar-bottom {
-        left: 0;
-        width: calc(100vw - 250px);
-        margin-left: 250px;
-        max-width: 100vw;
-      }
-    }
-    .eleven-player { display: none !important; }
   </style>
 </head>
 <body>
-  <button id="hamburger" aria-label="Open chapters sidebar">☰</button>
+  <!-- Hamburger icon on all screen sizes! -->
+  <button id="hamburger" aria-label="Open chapters sidebar" class="block"><svg width="28" height="28" viewBox="0 0 28 28" class="mx-auto"><rect width="24" height="3" x="2" y="6" rx="1.5" fill="currentColor"/><rect width="24" height="3" x="2" y="13" rx="1.5" fill="currentColor"/><rect width="24" height="3" x="2" y="20" rx="1.5" fill="currentColor"/></svg></button>
   <div id="sidebar">
     <button id="sidebar-close" aria-label="Close chapters sidebar">✕</button>
     <h2>Chapters</h2>
@@ -297,17 +213,26 @@
     <div id="status"></div>
     <div id="textDisplay"></div>
   </div>
-  <button id="openSettingsPanelBtn" class="fixed top-4 right-4 z-50 bg-white/80 text-gray-900 rounded-full shadow-lg p-2 hover:bg-blue-100 focus:outline-none border border-gray-300" aria-label="Settings">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
-  </button>
-  <div id="settingsPanelOverlay" class="hidden fixed inset-0 z-[9999] bg-black/40 flex items-center justify-center" style="backdrop-filter: blur(2px);">
-    <div class="relative w-full max-w-md mx-auto rounded-2xl shadow-2xl bg-white/95 backdrop-blur-lg border border-gray-100 p-0 overflow-hidden font-sans">
-      <button id="closeSettingsPanelBtn" type="button" class="absolute top-3 right-3 text-gray-500 hover:text-blue-600 text-2xl font-bold z-10" aria-label="Close settings">&times;</button>
+
+  <!-- Settings Panel (React-style, but now fully working) -->
+  <div id="settingsOverlay" class="hidden fixed inset-0 z-[9999] bg-black/30 flex items-center justify-center" style="backdrop-filter: blur(2px);">
+    <div id="settingsPanelModal" class="w-full max-w-md mx-auto rounded-2xl shadow-2xl bg-white/95 backdrop-blur-lg border border-gray-100 p-0 overflow-hidden font-sans relative">
+      <button
+        type="button"
+        id="settingsPanelCloseBtn"
+        class="absolute top-3 right-3 text-gray-500 hover:text-blue-600 text-2xl font-bold"
+        aria-label="Close settings"
+      >&times;</button>
       <header class="w-full py-4 px-6 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
-        <h2 class="font-semibold text-lg tracking-wide text-gray-900">Reading Settings</h2>
+        <h2 class="font-semibold text-lg tracking-wide text-gray-900">
+          Reading Settings
+        </h2>
       </header>
       <main class="p-6 space-y-7">
-        <section id="settingsPreview" class="rounded-xl transition-all duration-200 shadow-inner px-6 py-4 border bg-white text-gray-900 font-serif" style="font-size:1.1em;line-height:1.75;letter-spacing:0em;word-spacing:0em;margin:1.5em;text-align:justify;">
+        <!-- Live Preview -->
+        <section id="settingsPreview"
+          class="rounded-xl transition-all duration-200 shadow-inner px-6 py-4 border bg-white text-gray-900 font-serif"
+          style="font-size:1.1em;line-height:1.75;letter-spacing:0em;word-spacing:0em;margin:1.5em;text-align:justify;">
           <div class="mb-1 text-[0.95em] opacity-70 font-medium">Chapter One</div>
           <div>
             The quick brown fox jumps over the lazy dog. “Reading should be a joy, not a chore,” she thought, as she adjusted her book’s settings.
@@ -363,17 +288,40 @@
       </main>
     </div>
   </div>
-  <div class="audio-bar-bottom" id="floatingPlayer" style="display: flex;">
-    <button id="rewindBtn" title="Back 15 seconds">⏪</button>
-    <button id="stopBtn" title="Stop">⏹️</button>
-    <button id="playBtn" title="Play/Pause">▶️</button>
-    <div class="progress-group">
-      <span class="time current">0:00</span>
-      <input type="range" class="progress" min="0" max="100" value="0"/>
-      <span class="time total">0:00</span>
+  <!-- Fixed bottom audio bar -->
+  <div id="audioBar"
+       class="fixed bottom-0 left-0 w-full flex items-center justify-between gap-1 px-2 sm:px-6 py-2 z-[2000] transition-opacity duration-300 bg-white/80 dark:bg-[#181818]/90 backdrop-blur border-t border-gray-200 dark:border-[#282828] shadow-xl
+       text-gray-800 dark:text-gray-100
+       "
+       style="opacity:1;">
+    <!-- Hamburger for chapters (also here for desktop) -->
+    <button id="audioBarHamburger"
+      class="flex-shrink-0 mr-2 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-[#232323] focus:outline focus:ring-2 focus:ring-blue-500"
+      aria-label="Show chapters">
+      <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" class="block"><rect width="20" height="2" x="2" y="6" rx="1" fill="currentColor"/><rect width="20" height="2" x="2" y="11" rx="1" fill="currentColor"/><rect width="20" height="2" x="2" y="16" rx="1" fill="currentColor"/></svg>
+    </button>
+    <!-- Rewind -->
+    <button id="rewindBtn" class="audio-btn mx-1 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-[#232323] focus:outline focus:ring-2 focus:ring-blue-500" aria-label="Rewind 15 seconds">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 sm:h-8 sm:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M11 18l-7-6 7-6v12zm1-12v12c5 0 8-3 8-6s-3-6-8-6z" stroke="currentColor" stroke-width="2" fill="currentColor"/></svg>
+    </button>
+    <!-- Play/Pause -->
+    <button id="playBtn" class="audio-btn mx-1 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-[#232323] focus:outline focus:ring-2 focus:ring-blue-500" aria-label="Play/Pause">
+      <svg id="iconPlay" xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 sm:h-9 sm:w-9" fill="none" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21" fill="currentColor"/></svg>
+      <svg id="iconPause" xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 sm:h-9 sm:w-9 hidden" fill="none" viewBox="0 0 24 24"><rect x="5" y="3" width="5" height="18" fill="currentColor"/><rect x="14" y="3" width="5" height="18" fill="currentColor"/></svg>
+    </button>
+    <!-- Fast forward -->
+    <button id="forwardBtn" class="audio-btn mx-1 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-[#232323] focus:outline focus:ring-2 focus:ring-blue-500" aria-label="Forward 15 seconds">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 sm:h-8 sm:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M13 6v12l7-6-7-6zm-1 12V6C7 6 4 9 4 12s3 6 8 6z" stroke="currentColor" stroke-width="2" fill="currentColor"/></svg>
+    </button>
+    <!-- Progress bar -->
+    <div class="flex-1 flex items-center mx-2 min-w-0">
+      <span id="audioTimeCurrent" class="text-xs w-11 text-right select-none">0:00</span>
+      <input type="range" id="audioProgress" class="flex-1 mx-1 accent-blue-500" min="0" max="100" value="0" aria-label="Playback progress"/>
+      <span id="audioTimeTotal" class="text-xs w-11 text-left select-none">0:00</span>
     </div>
-    <button id="forwardBtn" title="Forward 15 seconds">⏩</button>
-    <select id="speedSelect" title="Playback speed">
+    <!-- Speed select -->
+    <select id="speedSelect" class="ml-1 mr-1 p-1 rounded text-sm bg-white dark:bg-[#232323] border border-gray-300 dark:border-[#282828] focus:outline focus:ring-2 focus:ring-blue-500"
+      title="Playback speed">
       <option value="1">1x</option>
       <option value="1.25">1.25x</option>
       <option value="1.5">1.5x</option>
@@ -382,207 +330,251 @@
       <option value="2.25">2.25x</option>
       <option value="2.5">2.5x</option>
     </select>
-    <span class="voice-label">Jenny</span>
+    <!-- Voice label -->
+    <span class="ml-1 mr-1 text-xs sm:text-base voice-label select-none">Jenny</span>
+    <!-- Settings button (moved here) -->
+    <button id="audioBarSettingsBtn"
+      class="ml-1 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-[#232323] focus:outline focus:ring-2 focus:ring-blue-500"
+      aria-label="Settings">
+      <svg class="h-6 w-6 sm:h-7 sm:w-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M12 8a4 4 0 100 8 4 4 0 000-8zm10 4a2 2 0 00-2-2h-1.26a8.12 8.12 0 00-.46-1.14l.89-.89a2 2 0 00-2.83-2.83l-.89.89A8.12 8.12 0 0014 5.26V4a2 2 0 00-2-2 2 2 0 00-2 2v1.26a8.12 8.12 0 00-1.14.46l-.89-.89a2 2 0 00-2.83 2.83l.89.89A8.12 8.12 0 005.26 10H4a2 2 0 000 4h1.26a8.12 8.12 0 00.46 1.14l-.89.89a2 2 0 002.83 2.83l.89-.89A8.12 8.12 0 0010 18.74V20a2 2 0 004 0v-1.26a8.12 8.12 0 001.14-.46l.89.89a2 2 0 002.83-2.83l-.89-.89A8.12 8.12 0 0018.74 14H20a2 2 0 002-2z"/>
+      </svg>
+    </button>
+    <!-- Hidden audio element -->
+    <audio id="mainAudio" preload="metadata" style="display:none"></audio>
   </div>
   <script>
-  const THEMES = [
-    {
-      name: "Normal",
-      previewClass: "bg-white text-gray-900 font-serif",
-      bg: "#ffffff",
-      color: "#222",
-      font: "serif",
-    },
-    {
-      name: "Soft",
-      previewClass: "bg-[#fdf6f2] text-[#5a4631] font-serif",
-      bg: "#fdf6f2",
-      color: "#5a4631",
-      font: "serif"
-    },
-    {
-      name: "Bold",
-      previewClass: "bg-white text-black font-serif font-bold",
-      bg: "#fff",
-      color: "#000",
-      font: "serif",
-      bold: true
-    },
-    {
-      name: "Gray",
-      previewClass: "bg-gray-100 text-gray-600 font-serif",
-      bg: "#f3f4f6",
-      color: "#6b7280",
-      font: "serif"
-    },
-    {
-      name: "Quiet",
-      previewClass: "bg-black text-gray-200 font-serif",
-      bg: "#000",
-      color: "#e5e7eb",
-      font: "serif"
-    },
-    {
-      name: "Sepia",
-      previewClass: "bg-[#f9ecd5] text-[#6b4c1b] font-serif",
-      bg: "#f9ecd5",
-      color: "#6b4c1b",
-      font: "serif"
-    }
-  ];
-
-  const settingsEls = {
-    overlay: document.getElementById("settingsPanelOverlay"),
-    openBtn: document.getElementById("openSettingsPanelBtn"),
-    closeBtn: document.getElementById("closeSettingsPanelBtn"),
-    preview: document.getElementById("settingsPreview"),
-    textSize: document.getElementById("settingsTextSize"),
-    themeGroup: document.getElementById("settingsThemeGroup"),
-    advancedBtn: document.getElementById("settingsAdvancedBtn"),
-    advancedSection: document.getElementById("settingsAdvancedSection"),
-    bold: document.getElementById("settingsBold"),
-    lineSpacing: document.getElementById("settingsLineSpacing"),
-    lineSpacingVal: document.getElementById("settingsLineSpacingVal"),
-    charSpacing: document.getElementById("settingsCharSpacing"),
-    charSpacingVal: document.getElementById("settingsCharSpacingVal"),
-    wordSpacing: document.getElementById("settingsWordSpacing"),
-    wordSpacingVal: document.getElementById("settingsWordSpacingVal"),
-    marginSize: document.getElementById("settingsMarginSize"),
-    marginSizeVal: document.getElementById("settingsMarginSizeVal"),
-    justify: document.getElementById("settingsJustify"),
-  };
-
-  let settingsState = {
-    textSize: 1.1,
-    theme: 0,
-    bold: false,
-    lineSpacing: 1.75,
-    charSpacing: 0,
-    wordSpacing: 0,
-    marginSize: 1.5,
-    justify: true
-  };
-
-  settingsEls.themeGroup.innerHTML = "";
-  THEMES.forEach((t, idx) => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.setAttribute("aria-label", t.name);
-    btn.className = "rounded-xl border-2 flex flex-col items-center justify-center px-2 py-2 text-xs transition-all duration-200 w-20 h-20 focus:outline-none border-gray-200 mb-1";
-    btn.innerHTML =
-      `<div class="w-10 h-8 rounded-lg border shadow-inner mb-1" style="background:${t.bg};color:${t.color};font-family:${t.font};font-weight:${t.bold ? 700 : 400};display:flex;align-items:center;justify-content:center;"><span>Aa</span></div>
-      <span class="text-[0.9em]">${t.name}</span>`;
-    btn.onclick = () => {
-      settingsState.theme = idx;
-      updatePanel();
+    // ===== Settings Panel Modal (vanilla JS, works like React) =====
+    // (Theme logic and preview)
+    const THEMES = [
+      {
+        name: "Normal",
+        previewClass: "bg-white text-gray-900 font-serif",
+        bg: "#ffffff",
+        color: "#222",
+        font: "serif",
+      },
+      {
+        name: "Soft",
+        previewClass: "bg-[#fdf6f2] text-[#5a4631] font-serif",
+        bg: "#fdf6f2",
+        color: "#5a4631",
+        font: "serif"
+      },
+      {
+        name: "Bold",
+        previewClass: "bg-white text-black font-serif font-bold",
+        bg: "#fff",
+        color: "#000",
+        font: "serif",
+        bold: true
+      },
+      {
+        name: "Gray",
+        previewClass: "bg-gray-100 text-gray-600 font-serif",
+        bg: "#f3f4f6",
+        color: "#6b7280",
+        font: "serif"
+      },
+      {
+        name: "Quiet",
+        previewClass: "bg-black text-gray-200 font-serif",
+        bg: "#000",
+        color: "#e5e7eb",
+        font: "serif"
+      },
+      {
+        name: "Sepia",
+        previewClass: "bg-[#f9ecd5] text-[#6b4c1b] font-serif",
+        bg: "#f9ecd5",
+        color: "#6b4c1b",
+        font: "serif"
+      }
+    ];
+    const settingsEls = {
+      overlay: document.getElementById("settingsOverlay"),
+      modal: document.getElementById("settingsPanelModal"),
+      closeBtn: document.getElementById("settingsPanelCloseBtn"),
+      preview: document.getElementById("settingsPreview"),
+      textSize: document.getElementById("settingsTextSize"),
+      themeGroup: document.getElementById("settingsThemeGroup"),
+      advancedBtn: document.getElementById("settingsAdvancedBtn"),
+      advancedSection: document.getElementById("settingsAdvancedSection"),
+      bold: document.getElementById("settingsBold"),
+      lineSpacing: document.getElementById("settingsLineSpacing"),
+      lineSpacingVal: document.getElementById("settingsLineSpacingVal"),
+      charSpacing: document.getElementById("settingsCharSpacing"),
+      charSpacingVal: document.getElementById("settingsCharSpacingVal"),
+      wordSpacing: document.getElementById("settingsWordSpacing"),
+      wordSpacingVal: document.getElementById("settingsWordSpacingVal"),
+      marginSize: document.getElementById("settingsMarginSize"),
+      marginSizeVal: document.getElementById("settingsMarginSizeVal"),
+      justify: document.getElementById("settingsJustify"),
     };
-    btn.id = "settingsThemeBtn" + idx;
-    settingsEls.themeGroup.appendChild(btn);
-  });
-
-  settingsEls.openBtn.onclick = () => {
-    settingsEls.overlay.classList.remove("hidden");
-    updatePanel();
-  };
-  settingsEls.closeBtn.onclick = () => {
-    settingsEls.overlay.classList.add("hidden");
-  };
-  settingsEls.overlay.onclick = (e) => {
-    if (e.target === settingsEls.overlay) settingsEls.overlay.classList.add("hidden");
-  };
-  document.addEventListener("keydown", (e) => {
-    if (!settingsEls.overlay.classList.contains("hidden") && e.key === "Escape") settingsEls.overlay.classList.add("hidden");
-  });
-
-  settingsEls.advancedBtn.onclick = function() {
-    const shown = settingsEls.advancedSection.classList.toggle("hidden");
-    this.setAttribute("aria-expanded", !shown);
-  };
-
-  settingsEls.textSize.oninput = e => { settingsState.textSize = parseFloat(e.target.value); updatePanel(); };
-  settingsEls.bold.oninput = e => { settingsState.bold = e.target.checked; updatePanel(); };
-  settingsEls.lineSpacing.oninput = e => { settingsState.lineSpacing = parseFloat(e.target.value); updatePanel(); };
-  settingsEls.charSpacing.oninput = e => { settingsState.charSpacing = parseFloat(e.target.value); updatePanel(); };
-  settingsEls.wordSpacing.oninput = e => { settingsState.wordSpacing = parseFloat(e.target.value); updatePanel(); };
-  settingsEls.marginSize.oninput = e => { settingsState.marginSize = parseFloat(e.target.value); updatePanel(); };
-  settingsEls.justify.oninput = e => { settingsState.justify = e.target.checked; updatePanel(); };
-
-  function updatePanel() {
-    THEMES.forEach((t, idx) => {
-      const btn = document.getElementById("settingsThemeBtn" + idx);
-      if (idx === settingsState.theme) {
-        btn.classList.add("border-blue-600", "ring-2", "ring-blue-300");
-        btn.classList.remove("border-gray-200");
-      } else {
-        btn.classList.remove("border-blue-600", "ring-2", "ring-blue-300");
-        btn.classList.add("border-gray-200");
+    let settingsState = {
+      textSize: 1.1,
+      theme: 0,
+      bold: false,
+      lineSpacing: 1.75,
+      charSpacing: 0,
+      wordSpacing: 0,
+      marginSize: 1.5,
+      justify: true
+    };
+    function openSettingsPanel() {
+      settingsEls.overlay.classList.remove("hidden");
+      updatePanel();
+      document.body.style.overflow = "hidden";
+    }
+    function closeSettingsPanel() {
+      settingsEls.overlay.classList.add("hidden");
+      document.body.style.overflow = "";
+    }
+    window.closeSettingsPanel = closeSettingsPanel;
+    // Open from audio bar settings button!
+    document.getElementById("audioBarSettingsBtn").onclick = openSettingsPanel;
+    // Also close with × button
+    settingsEls.closeBtn.onclick = closeSettingsPanel;
+    // Close on click outside modal
+    settingsEls.overlay.onclick = (e) => {
+      if (e.target === settingsEls.overlay) closeSettingsPanel();
+    };
+    // Close on Escape key
+    document.addEventListener("keydown", (e) => {
+      if (!settingsEls.overlay.classList.contains("hidden") && e.key === "Escape") {
+        closeSettingsPanel();
       }
     });
-    settingsEls.textSize.value = settingsState.textSize;
-    settingsEls.bold.checked = settingsState.bold;
-    settingsEls.lineSpacing.value = settingsState.lineSpacing;
-    settingsEls.charSpacing.value = settingsState.charSpacing;
-    settingsEls.wordSpacing.value = settingsState.wordSpacing;
-    settingsEls.marginSize.value = settingsState.marginSize;
-    settingsEls.justify.checked = settingsState.justify;
-    settingsEls.lineSpacingVal.textContent = settingsState.lineSpacing.toFixed(2) + "×";
-    settingsEls.charSpacingVal.textContent = settingsState.charSpacing === 0 ? "Default" : `${(settingsState.charSpacing*1000).toFixed(0)} th em`;
-    settingsEls.wordSpacingVal.textContent = settingsState.wordSpacing === 0 ? "Default" : `${(settingsState.wordSpacing*1000).toFixed(0)} th em`;
-    settingsEls.marginSizeVal.textContent = settingsState.marginSize === 1.5 ? "1.5em" : `${settingsState.marginSize}em`;
-    const t = THEMES[settingsState.theme];
-    settingsEls.preview.className = `rounded-xl transition-all duration-200 shadow-inner px-6 py-4 border ${t.previewClass} ${settingsState.bold ? "font-bold" : ""}`;
-    settingsEls.preview.style.fontSize = settingsState.textSize + "em";
-    settingsEls.preview.style.lineHeight = settingsState.lineSpacing;
-    settingsEls.preview.style.letterSpacing = settingsState.charSpacing + "em";
-    settingsEls.preview.style.wordSpacing = settingsState.wordSpacing + "em";
-    settingsEls.preview.style.margin = settingsState.marginSize + "em";
-    settingsEls.preview.style.textAlign = settingsState.justify ? "justify" : "left";
-    settingsEls.preview.style.background = t.bg;
-    settingsEls.preview.style.color = t.color;
-    settingsEls.preview.style.fontFamily = t.font;
-    settingsEls.preview.style.fontWeight = settingsState.bold ? "bold" : (t.bold ? "bold" : "normal");
-    const mainText = document.getElementById("textDisplay");
-    if (mainText) {
-      mainText.className = `${t.previewClass} ${settingsState.bold ? "font-bold" : ""}`;
-      mainText.style.fontSize = settingsState.textSize + "em";
-      mainText.style.lineHeight = settingsState.lineSpacing;
-      mainText.style.letterSpacing = settingsState.charSpacing + "em";
-      mainText.style.wordSpacing = settingsState.wordSpacing + "em";
-      mainText.style.margin = settingsState.marginSize + "em auto";
-      mainText.style.textAlign = settingsState.justify ? "justify" : "left";
-      mainText.style.background = t.bg;
-      mainText.style.color = t.color;
-      mainText.style.fontFamily = t.font;
-      mainText.style.fontWeight = settingsState.bold ? "bold" : (t.bold ? "bold" : "normal");
+    // Build theme buttons
+    settingsEls.themeGroup.innerHTML = "";
+    THEMES.forEach((t, idx) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.setAttribute("aria-label", t.name);
+      btn.className = "rounded-xl border-2 flex flex-col items-center justify-center px-2 py-2 text-xs transition-all duration-200 w-20 h-20 focus:outline-none border-gray-200 mb-1";
+      btn.innerHTML =
+        `<div class="w-10 h-8 rounded-lg border shadow-inner mb-1" style="background:${t.bg};color:${t.color};font-family:${t.font};font-weight:${t.bold ? 700 : 400};display:flex;align-items:center;justify-content:center;"><span>Aa</span></div>
+        <span class="text-[0.9em]">${t.name}</span>`;
+      btn.onclick = () => {
+        settingsState.theme = idx;
+        updatePanel();
+      };
+      btn.id = "settingsThemeBtn" + idx;
+      settingsEls.themeGroup.appendChild(btn);
+    });
+    // Advanced section
+    settingsEls.advancedBtn.onclick = function() {
+      const shown = settingsEls.advancedSection.classList.toggle("hidden");
+      this.setAttribute("aria-expanded", !shown);
+    };
+    settingsEls.textSize.oninput = e => { settingsState.textSize = parseFloat(e.target.value); updatePanel(); };
+    settingsEls.bold.oninput = e => { settingsState.bold = e.target.checked; updatePanel(); };
+    settingsEls.lineSpacing.oninput = e => { settingsState.lineSpacing = parseFloat(e.target.value); updatePanel(); };
+    settingsEls.charSpacing.oninput = e => { settingsState.charSpacing = parseFloat(e.target.value); updatePanel(); };
+    settingsEls.wordSpacing.oninput = e => { settingsState.wordSpacing = parseFloat(e.target.value); updatePanel(); };
+    settingsEls.marginSize.oninput = e => { settingsState.marginSize = parseFloat(e.target.value); updatePanel(); };
+    settingsEls.justify.oninput = e => { settingsState.justify = e.target.checked; updatePanel(); };
+    function updatePanel() {
+      THEMES.forEach((t, idx) => {
+        const btn = document.getElementById("settingsThemeBtn" + idx);
+        if (idx === settingsState.theme) {
+          btn.classList.add("border-blue-600", "ring-2", "ring-blue-300");
+          btn.classList.remove("border-gray-200");
+        } else {
+          btn.classList.remove("border-blue-600", "ring-2", "ring-blue-300");
+          btn.classList.add("border-gray-200");
+        }
+      });
+      settingsEls.textSize.value = settingsState.textSize;
+      settingsEls.bold.checked = settingsState.bold;
+      settingsEls.lineSpacing.value = settingsState.lineSpacing;
+      settingsEls.charSpacing.value = settingsState.charSpacing;
+      settingsEls.wordSpacing.value = settingsState.wordSpacing;
+      settingsEls.marginSize.value = settingsState.marginSize;
+      settingsEls.justify.checked = settingsState.justify;
+      settingsEls.lineSpacingVal.textContent = settingsState.lineSpacing.toFixed(2) + "×";
+      settingsEls.charSpacingVal.textContent = settingsState.charSpacing === 0 ? "Default" : `${(settingsState.charSpacing*1000).toFixed(0)} th em`;
+      settingsEls.wordSpacingVal.textContent = settingsState.wordSpacing === 0 ? "Default" : `${(settingsState.wordSpacing*1000).toFixed(0)} th em`;
+      settingsEls.marginSizeVal.textContent = settingsState.marginSize === 1.5 ? "1.5em" : `${settingsState.marginSize}em`;
+      const t = THEMES[settingsState.theme];
+      settingsEls.preview.className = `rounded-xl transition-all duration-200 shadow-inner px-6 py-4 border ${t.previewClass} ${settingsState.bold ? "font-bold" : ""}`;
+      settingsEls.preview.style.fontSize = settingsState.textSize + "em";
+      settingsEls.preview.style.lineHeight = settingsState.lineSpacing;
+      settingsEls.preview.style.letterSpacing = settingsState.charSpacing + "em";
+      settingsEls.preview.style.wordSpacing = settingsState.wordSpacing + "em";
+      settingsEls.preview.style.margin = settingsState.marginSize + "em";
+      settingsEls.preview.style.textAlign = settingsState.justify ? "justify" : "left";
+      settingsEls.preview.style.background = t.bg;
+      settingsEls.preview.style.color = t.color;
+      settingsEls.preview.style.fontFamily = t.font;
+      settingsEls.preview.style.fontWeight = settingsState.bold ? "bold" : (t.bold ? "bold" : "normal");
+      // Update main text area
+      const mainText = document.getElementById("textDisplay");
+      if (mainText) {
+        mainText.className = `${t.previewClass} ${settingsState.bold ? "font-bold" : ""}`;
+        mainText.style.fontSize = settingsState.textSize + "em";
+        mainText.style.lineHeight = settingsState.lineSpacing;
+        mainText.style.letterSpacing = settingsState.charSpacing + "em";
+        mainText.style.wordSpacing = settingsState.wordSpacing + "em";
+        mainText.style.margin = settingsState.marginSize + "em auto";
+        mainText.style.textAlign = settingsState.justify ? "justify" : "left";
+        mainText.style.background = t.bg;
+        mainText.style.color = t.color;
+        mainText.style.fontFamily = t.font;
+        mainText.style.fontWeight = settingsState.bold ? "bold" : (t.bold ? "bold" : "normal");
+      }
+      // Update audio bar color for Quiet theme
+      const audioBar = document.getElementById('audioBar');
+      if (audioBar) {
+        if (THEMES[settingsState.theme].name === "Quiet") {
+          audioBar.classList.add("bg-black/90", "text-gray-200", "dark:bg-black");
+          audioBar.classList.remove("bg-white/80", "text-gray-800");
+        } else {
+          audioBar.classList.remove("bg-black/90", "text-gray-200", "dark:bg-black");
+          audioBar.classList.add("bg-white/80", "text-gray-800");
+        }
+      }
     }
-  }
-  updatePanel();
-  </script>
-  <script>
-  document.addEventListener('DOMContentLoaded', () => {
+    updatePanel();
+
+    // ===== Fixed bottom audio bar logic (auto-hide, keyboard accessibility, mobile responsive) =====
+    let audioBar = document.getElementById("audioBar");
+    let hideBarTimeout = null;
+    let barVisible = true;
+    function showAudioBar() {
+      if (!barVisible) {
+        audioBar.style.opacity = "1";
+        barVisible = true;
+      }
+      clearTimeout(hideBarTimeout);
+      hideBarTimeout = setTimeout(() => {
+        audioBar.style.opacity = "0";
+        barVisible = false;
+      }, 5000);
+    }
+    // Show bar on user activity (mouse, touch, key)
+    ["mousemove","touchstart","keydown"].forEach(evt => {
+      document.addEventListener(evt, showAudioBar, {passive:true});
+    });
+    // Prevent bar from hiding if mouse is over bar
+    audioBar.addEventListener("mouseenter", ()=> {
+      clearTimeout(hideBarTimeout);
+    });
+    audioBar.addEventListener("mouseleave", showAudioBar);
+    // Initial show
+    showAudioBar();
+
+    // ===== Hamburger always visible on all screen sizes (for chapter sidebar) =====
+    // Also add hamburger in bottom bar for desktop nav
+    document.getElementById("audioBarHamburger").onclick = () =>
+      document.getElementById("hamburger").click();
+
+    // ===== Old hamburger logic (chapter sidebar) =====
     const sidebar     = document.getElementById('sidebar');
     const hamburger   = document.getElementById('hamburger');
     const sidebarClose= document.getElementById('sidebar-close');
     const overlay     = document.getElementById('sidebar-overlay');
-    const chapterList = document.getElementById('chapterList');
-    const form        = document.getElementById('uploadForm');
-    const textDiv     = document.getElementById('textDisplay');
-    const statusDiv   = document.getElementById('status');
-    const voiceSelect = document.getElementById('voiceSelect');
-    const player      = document.getElementById('floatingPlayer');
-    const playBtn     = document.getElementById('playBtn');
-    const stopBtn     = document.getElementById('stopBtn');
-    const rewindBtn   = document.getElementById('rewindBtn');
-    const forwardBtn  = document.getElementById('forwardBtn');
-    const speedSelect = document.getElementById('speedSelect');
-    const prog        = player.querySelector('.progress');
-    const curTime     = player.querySelector('.current');
-    const totTime     = player.querySelector('.total');
-    const voiceLabel  = player.querySelector('.voice-label');
-    const audio = new Audio();
-    audio.preload = 'metadata';
-    let uploadId, chunks = [], cache = {}, currentIdx = 0, playingSeq = false;
-
+    hamburger.style.display = "block"; // always visible
     function openSidebar() {
       sidebar.classList.add('open');
       hamburger.classList.add('open');
@@ -606,6 +598,24 @@
         closeSidebar();
       }
     });
+
+    // ===== EPUB logic + audio player =====
+    const chapterList = document.getElementById('chapterList');
+    const form        = document.getElementById('uploadForm');
+    const textDiv     = document.getElementById('textDisplay');
+    const statusDiv   = document.getElementById('status');
+    const voiceSelect = document.getElementById('voiceSelect');
+    const mainAudio   = document.getElementById('mainAudio');
+    const playBtn     = document.getElementById('playBtn');
+    const rewindBtn   = document.getElementById('rewindBtn');
+    const forwardBtn  = document.getElementById('forwardBtn');
+    const stopBtn     = document.getElementById('stopBtn');
+    const speedSelect = document.getElementById('speedSelect');
+    const prog        = document.getElementById('audioProgress');
+    const curTime     = document.getElementById('audioTimeCurrent');
+    const totTime     = document.getElementById('audioTimeTotal');
+    const voiceLabel  = document.querySelector('.voice-label');
+    let uploadId, chunks = [], cache = {}, currentIdx = 0, playingSeq = false;
 
     const voices = [
       "en-AU-NatashaNeural","en-AU-WilliamNeural",
@@ -728,14 +738,13 @@
       textDiv.querySelectorAll('p, h2').forEach(p => p.classList.remove('highlight'));
       const el = textDiv.querySelector(`[data-index="${i}"]`);
       if (el) el.classList.add('highlight');
-
       fetchChunk(i).then(url => {
-        audio.src = url;
-        audio.play();
+        mainAudio.src = url;
+        mainAudio.play();
       });
     }
 
-    audio.onended = () => {
+    mainAudio.onended = () => {
       if (playingSeq && currentIdx + 1 < chunks.length) {
         currentIdx++;
         playChunk(currentIdx);
@@ -743,50 +752,75 @@
         playingSeq = false;
       }
     };
-
-    audio.onloadedmetadata = () => {
-      const d = Math.floor(audio.duration);
+    mainAudio.onloadedmetadata = () => {
+      const d = Math.floor(mainAudio.duration);
       totTime.textContent = `${Math.floor(d/60)}:${String(d%60).padStart(2,'0')}`;
+      prog.max = mainAudio.duration || 100;
     };
-
-    audio.ontimeupdate = () => {
-      const t = Math.floor(audio.currentTime);
+    mainAudio.ontimeupdate = () => {
+      const t = Math.floor(mainAudio.currentTime);
       curTime.textContent = `${Math.floor(t/60)}:${String(t%60).padStart(2,'0')}`;
-      prog.value = (audio.currentTime / audio.duration) * 100 || 0;
+      prog.value = mainAudio.currentTime || 0;
+    };
+    prog.oninput = e => {
+      mainAudio.currentTime = (e.target.value / prog.max) * mainAudio.duration;
     };
 
-    prog.oninput = e => {
-      audio.currentTime = (e.target.value / 100) * audio.duration;
-    };
+    // Play/Pause Toggle Button SVGs
+    function setPlayPauseIcon(isPlaying) {
+      document.getElementById('iconPlay').style.display = isPlaying ? "none" : "";
+      document.getElementById('iconPause').style.display = isPlaying ? "" : "none";
+    }
+    mainAudio.onplay = () => setPlayPauseIcon(true);
+    mainAudio.onpause = () => setPlayPauseIcon(false);
 
     playBtn.onclick = () => {
-      if (audio.paused) {
-        audio.play();
+      if (mainAudio.paused) {
+        mainAudio.play();
       } else {
-        audio.pause();
+        mainAudio.pause();
       }
     };
-
-    stopBtn.onclick = () => {
-      audio.pause();
-      audio.currentTime = 0;
-      playingSeq = false;
-      textDiv.querySelectorAll('p, h2').forEach(p => p.classList.remove('highlight'));
-    };
-
     rewindBtn.onclick = () => {
-      audio.currentTime = Math.max(0, audio.currentTime - 15);
+      mainAudio.currentTime = Math.max(0, mainAudio.currentTime - 15);
     };
-
     forwardBtn.onclick = () => {
-      audio.currentTime = Math.min(audio.duration, audio.currentTime + 15);
+      mainAudio.currentTime = Math.min(mainAudio.duration, mainAudio.currentTime + 15);
     };
-
     speedSelect.addEventListener('change', () => {
-      audio.playbackRate = parseFloat(speedSelect.value);
+      mainAudio.playbackRate = parseFloat(speedSelect.value);
     });
-    audio.playbackRate = parseFloat(speedSelect.value);
-  });
+    mainAudio.playbackRate = parseFloat(speedSelect.value);
+
+    // Keyboard accessibility for audio bar
+    playBtn.onkeydown = rewindBtn.onkeydown = forwardBtn.onkeydown = function(e) {
+      if (e.key === " " || e.key === "Enter") { e.preventDefault(); this.click(); }
+    };
+    document.addEventListener('keydown', function(e) {
+      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT") return;
+      if (e.key === " ") {
+        e.preventDefault(); playBtn.click();
+      }
+      if (e.key === "ArrowLeft") rewindBtn.click();
+      if (e.key === "ArrowRight") forwardBtn.click();
+    });
+
+    // Mobile bar sizing
+    function adjustAudioBarForMobile() {
+      if(window.innerWidth < 700) {
+        audioBar.classList.add("text-base", "py-1");
+        audioBar.querySelectorAll("button,select").forEach(el => {
+          el.classList.add("p-1", "text-base");
+        });
+      } else {
+        audioBar.classList.remove("text-base", "py-1");
+        audioBar.querySelectorAll("button,select").forEach(el => {
+          el.classList.remove("p-1", "text-base");
+        });
+      }
+    }
+    window.addEventListener("resize", adjustAudioBarForMobile);
+    adjustAudioBarForMobile();
   </script>
 </body>
 </html>
