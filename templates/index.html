@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>EPUB Audio Reader</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"/>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css" rel="stylesheet">
   <style>
     body {
       font-family: 'Inter', sans-serif;
@@ -183,9 +182,6 @@
       }
     }
     .eleven-player { display: none !important; }
-    #audioBar {
-      pointer-events: auto;
-    }
     @media (max-width: 700px) {
       .sidebar {
         position: fixed !important;
@@ -340,19 +336,6 @@
         }
       }
     });
-    // Audio bar auto-hide
-    let audioBar = document.getElementById("audioBar");
-    let hideBarTimeout = null;
-    let barVisible = true;
-    function showAudioBar() {
-      if (!barVisible) { audioBar.style.opacity = "1"; barVisible = true; }
-      clearTimeout(hideBarTimeout);
-      hideBarTimeout = setTimeout(() => { audioBar.style.opacity = "0"; barVisible = false; }, 5000);
-    }
-    ["mousemove","touchstart","keydown"].forEach(evt => { document.addEventListener(evt, showAudioBar, {passive:true}); });
-    audioBar.addEventListener("mouseenter", ()=> { clearTimeout(hideBarTimeout); });
-    audioBar.addEventListener("mouseleave", showAudioBar);
-    showAudioBar();
     // EPUB logic + audio player
     const chapterList = document.getElementById('chapterList');
     const form        = document.getElementById('uploadForm');
@@ -556,22 +539,6 @@
       if (e.key === "ArrowLeft") rewindBtn.click();
       if (e.key === "ArrowRight") forwardBtn.click();
     });
-    // Mobile bar sizing
-    function adjustAudioBarForMobile() {
-      if(window.innerWidth < 700) {
-        audioBar.classList.add("text-base", "py-1");
-        audioBar.querySelectorAll("button,select").forEach(el => {
-          el.classList.add("p-1", "text-base");
-        });
-      } else {
-        audioBar.classList.remove("text-base", "py-1");
-        audioBar.querySelectorAll("button,select").forEach(el => {
-          el.classList.remove("p-1", "text-base");
-        });
-      }
-    }
-    window.addEventListener("resize", adjustAudioBarForMobile);
-    adjustAudioBarForMobile();
 
     // ===== DYNAMIC SETTINGS PANEL MODAL INJECTION =====
     document.getElementById("audioBarSettingsBtn").onclick = function openSettingsPanel() {
