@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>EPUB Audio Reader</title>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Eleven-Labs Style Audio Player</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"/>
   <style>
     body {
@@ -19,161 +19,167 @@
     }
     h1 {
       font-weight: 700;
-      margin-bottom: 1rem;
+      margin-bottom: 1.5rem;
     }
-    form {
-      background-color: #1f1f1f;
-      padding: 1.5rem;
-      border-radius: 12px;
-      max-width: 600px;
-      width: 100%;
-      box-shadow: 0 4px 12px rgb(0 0 0 / 0.5);
+
+    /* Eleven-Labs–Style Audio Player Controls */
+    .eleven-player {
       display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
-    input[type="file"], select {
-      padding: 0.8rem 1rem;
-      border-radius: 8px;
-      border: none;
-      font-size: 1rem;
-      background-color: #2a2a2a;
-      color: #eee;
-      cursor: pointer;
-    }
-    button {
-      background-color: #4c8bf5;
-      color: white;
-      font-weight: 600;
-      border: none;
+      align-items: center;
+      background: #1f1f1f;
       padding: 0.75rem 1rem;
       border-radius: 8px;
+      font-family: 'Inter', sans-serif;
+      gap: 0.75rem;
+      max-width: 600px;
+      width: 100%;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+
+    .eleven-player .play-btn {
+      width: 36px; height: 36px;
+      background: #292929;
+      border: none;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
       cursor: pointer;
-      font-size: 1.1rem;
-      transition: background-color 0.25s ease;
+      transition: background 0.2s;
     }
-    button:hover {
-      background-color: #3a6fe2;
+    .eleven-player .play-btn:hover {
+      background: #3a3a3a;
     }
-    #textDisplay {
-      margin-top: 2rem;
-      max-width: 800px;
-      background-color: #1e1e1e;
-      padding: 1.5rem;
-      border-radius: 12px;
-      line-height: 1.6;
-      white-space: pre-wrap;
-      user-select: text;
-      cursor: default;
+    .eleven-player .play-btn svg {
+      width: 20px; height: 20px;
+      fill: #fff;
     }
-    .highlight {
-      background-color: #4c8bf5;
-      color: white;
-      padding: 0 4px;
+
+    .eleven-player .progress-group {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .eleven-player .progress-group .time {
+      font-size: 0.85rem;
+      color: #aaa;
+      width: 2.5rem;
+      text-align: center;
+    }
+    .eleven-player .progress-group .progress {
+      -webkit-appearance: none;
+      appearance: none;
+      flex: 1;
+      height: 4px;
+      background: #333;
+      border-radius: 2px;
+      cursor: pointer;
+    }
+    .eleven-player .progress-group .progress::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 12px; height: 12px;
+      background: #4c8bf5;
+      border-radius: 50%;
+      margin-top: -4px;
+    }
+
+    .eleven-player .speed-btn {
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 0.85rem;
+      cursor: pointer;
+      padding: 0.25rem 0.5rem;
       border-radius: 4px;
-      transition: background-color 0.3s;
+      transition: background 0.2s;
     }
-    span {
-      cursor: pointer;
+    .eleven-player .speed-btn:hover {
+      background: rgba(255,255,255,0.1);
     }
-    #status {
-      margin-top: 1rem;
-      font-style: italic;
+
+    .eleven-player .voice-label {
+      font-size: 0.85rem;
       color: #ccc;
+      padding: 0.25rem 0.5rem;
+      background: #292929;
+      border-radius: 4px;
     }
   </style>
 </head>
 <body>
 
-  <h1>EPUB Audio Reader</h1>
+  <h1>Eleven-Labs–Style Audio Player</h1>
 
-  <form id="uploadForm">
-    <input type="file" id="epubFile" name="file" accept=".epub" required />
-    <select id="voiceSelect" name="voice">
-      <option value="">Select Voice (default: Jenny)</option>
-    </select>
-    <button type="submit">Convert EPUB to Audio</button>
-  </form>
+  <div class="eleven-player">
+    <button class="play-btn" aria-label="Play/Pause">
+      <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+    </button>
 
-  <div id="status"></div>
-  <div id="textDisplay"></div>
+    <div class="progress-group">
+      <span class="time current">0:00</span>
+      <input type="range" class="progress" min="0" max="100" value="0"/>
+      <span class="time total">0:00</span>
+    </div>
+
+    <button class="speed-btn">1×</button>
+    <div class="voice-label">Jenny</div>
+  </div>
 
   <script>
-    // repopulate your voice dropdown exactly as before
-    const voices = [
-      "en-AU-NatashaNeural", "en-AU-WilliamNeural", "en-CA-ClaraNeural", "en-CA-LiamNeural",
-      "en-GB-LibbyNeural", "en-GB-RyanNeural", "en-GB-SoniaNeural", "en-IN-NeerjaNeural",
-      "en-IN-PriyaNeural", "en-US-AriaNeural", "en-US-GuyNeural", "en-US-JennyNeural",
-      "en-US-MichelleNeural", "en-US-TonyNeural"
-    ];
-    const voiceSelect = document.getElementById('voiceSelect');
-    voices.forEach(v => {
-      const opt = document.createElement('option');
-      opt.value = v;
-      opt.textContent = v;
-      voiceSelect.appendChild(opt);
-    });
+    // Grab controls
+    const playBtn     = document.querySelector('.eleven-player .play-btn');
+    const progress    = document.querySelector('.eleven-player .progress');
+    const currentTime = document.querySelector('.eleven-player .current');
+    const totalTime   = document.querySelector('.eleven-player .total');
+    const speedBtn    = document.querySelector('.eleven-player .speed-btn');
+    const voiceLabel  = document.querySelector('.eleven-player .voice-label');
 
-    const form        = document.getElementById('uploadForm');
-    const statusDiv   = document.getElementById('status');
-    const textDisplay = document.getElementById('textDisplay');
-    let uploadId      = null;
-    let currentAudio  = null;
+    // Create audio element
+    const audio = new Audio();
+    audio.src = 'YOUR_AUDIO_FILE_URL.mp3'; // ← Replace with your URL
+    audio.preload = 'metadata';
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      statusDiv.textContent = 'Extracting text…';
-      textDisplay.innerHTML = '';
-      if (currentAudio) {
-        currentAudio.pause();
-        currentAudio = null;
-      }
-      const formData = new FormData(form);
+    // Once metadata is loaded, display total duration
+    audio.onloadedmetadata = () => {
+      const t = Math.floor(audio.duration);
+      totalTime.textContent = 
+        `${Math.floor(t/60)}:${String(t%60).padStart(2,'0')}`;
+    };
 
-      const res = await fetch('/upload', { method: 'POST', body: formData });
-      if (!res.ok) {
-        const errText = await res.text();
-        statusDiv.textContent = `Error: ${errText}`;
-        console.error('Upload failed:', errText);
-        return;
-      }
-      const data = await res.json();
-      uploadId = data.upload_id;
-      statusDiv.textContent = 'Ready! Click any sentence to play audio.';
+    // Update current time & slider as audio plays
+    audio.ontimeupdate = () => {
+      const t = Math.floor(audio.currentTime);
+      currentTime.textContent = 
+        `${Math.floor(t/60)}:${String(t%60).padStart(2,'0')}`;
+      progress.value = (audio.currentTime / audio.duration) * 100 || 0;
+    };
 
-      data.text_chunks.forEach((chunk, idx) => {
-        const span = document.createElement('span');
-        span.textContent = chunk + ' ';
-        span.dataset.index = idx;
-        textDisplay.appendChild(span);
-      });
-    });
+    // Scrub on slider input
+    progress.oninput = e => {
+      audio.currentTime = (e.target.value / 100) * audio.duration;
+    };
 
-    textDisplay.addEventListener('click', async (e) => {
-      if (e.target.tagName.toLowerCase() !== 'span') return;
-      textDisplay.querySelectorAll('span').forEach(s => s.classList.remove('highlight'));
-      e.target.classList.add('highlight');
+    // Play/Pause toggle
+    playBtn.onclick = () => {
+      if (audio.paused) audio.play();
+      else audio.pause();
+      playBtn.querySelector('path').setAttribute(
+        'd',
+        audio.paused
+          ? 'M8 5v14l11-7z'         // play icon
+          : 'M6 5h4v14H6zm8 0h4v14h-4z' // pause icon
+      );
+    };
 
-      statusDiv.textContent = 'Generating audio…';
-      const idx = e.target.dataset.index;
-      const res = await fetch('/chunk', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ upload_id: uploadId, index: idx })
-      });
-      if (!res.ok) {
-        const errText = await res.text();
-        statusDiv.textContent = `Audio error: ${errText}`;
-        console.error('Chunk failed:', errText);
-        return;
-      }
-
-      const blob = await res.blob();
-      statusDiv.textContent = 'Playing…';
-      if (currentAudio) currentAudio.pause();
-      currentAudio = new Audio(URL.createObjectURL(blob));
-      currentAudio.play();
-    });
+    // Speed cycle
+    const speeds = [1,1.25,1.5,2];
+    let speedIndex = 0;
+    speedBtn.onclick = () => {
+      speedIndex = (speedIndex + 1) % speeds.length;
+      audio.playbackRate = speeds[speedIndex];
+      speedBtn.textContent   = speeds[speedIndex] + '×';
+    };
   </script>
 </body>
 </html>
