@@ -117,15 +117,15 @@ def extract_epub_chapter_content(doc_map, img_map, file_name):
                         mime = img_item.media_type or 'image/jpeg'
                         b64 = base64.b64encode(img_item.get_content()).decode('utf-8')
                         data_url = f"data:{mime};base64,{b64}"
-                        content_chunks.append(data_url)
+                        content_chunks.append({'type': 'image', 'src': data_url})
                 elif elem.name in ['h1','h2','h3','h4','h5','h6']:
                     text = clean_text(elem.get_text(separator=' ', strip=True))
                     if text.strip():
-                        content_chunks.append(text)
+                        content_chunks.append({'type': 'heading', 'text': text, 'tag': elem.name})
                 elif elem.name == 'p':
                     text = clean_text(elem.get_text(separator=' ', strip=True))
                     if text.strip():
-                        content_chunks.append(text)
+                        content_chunks.append({'type': 'paragraph', 'text': text})
         return content_chunks
     except Exception:
         return []
