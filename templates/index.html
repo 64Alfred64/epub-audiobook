@@ -2,148 +2,64 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>EPUB Audio Reader</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"/>
   <style>
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: #111;
-      color: #fff;
-      margin: 0;
-      padding: 2rem;
-    }
-    h1 {
-      font-size: 2rem;
-      font-weight: 600;
-      margin-bottom: 1rem;
-      text-align: center;
-    }
-    .controls {
-      max-width: 600px;
-      margin: 0 auto 2rem auto;
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-      align-items: center;
-    }
-    input[type="file"], select, button {
-      width: 100%;
-      max-width: 400px;
-      padding: 0.75rem;
-      border-radius: 6px;
-      border: none;
-      font-size: 1rem;
-    }
-    button {
-      background-color: #4c8bf5;
-      color: white;
-      cursor: pointer;
-      font-weight: 600;
-      transition: background-color 0.3s ease;
-    }
-    button:hover {
-      background-color: #3a6fe2;
-    }
-    #textDisplay {
-      max-width: 800px;
-      margin: 0 auto;
-      background-color: #1a1a1a;
-      padding: 1.5rem;
-      border-radius: 10px;
-      line-height: 1.6;
-      white-space: pre-wrap;
-      user-select: none;
-    }
-    .highlight {
-      background-color: #4c8bf5;
-      color: white;
-      padding: 0 4px;
-      border-radius: 4px;
-      transition: background-color 0.3s;
-    }
-    span {
-      cursor: pointer;
-    }
+    body { font-family: sans-serif; margin: 2rem; }
+    #chunks div { margin: .5rem 0; padding: .5rem; cursor: pointer; }
+    .playing { background-color: #f0f8ff; }
   </style>
 </head>
 <body>
-
   <h1>EPUB Audio Reader</h1>
+  <form id="uploadForm">
+    <input type="file" id="epub" accept=".epub" required />
+    <select id="voice">
+      <option value="en-US-JennyNeural">Jenny</option>
+      <option value="en-US-GuyNeural">Guy</option>
+    </select>
+    <button type="submit">Upload</button>
+  </form>
 
-  <div class="controls">
-    <form id="uploadForm">
-      <input type="file" id="epubFile" name="epub" accept=".epub" required />
-      <select id="voiceSelect" name="voice">
-        <option value="">Select Voice (default: Jenny)</option>
-        {% for voice in voices %}
-          <option value="{{ voice }}">{{ voice }}</option>
-        {% endfor %}
-      </select>
-      <button type="submit">Convert EPUB to Audio</button>
-    </form>
-  </div>
-
-  <div id="textDisplay"></div>
+  <div id="chunks"></div>
 
   <script>
-    const form = document.getElementById('uploadForm');
-    const textDisplay = document.getElementById('textDisplay');
-
-    let audioFiles = [];
-    let currentAudio = null;
-
-    form.addEventListener('submit', async (e) => {
+    document.getElementById('uploadForm').onsubmit = async (e) => {
       e.preventDefault();
-      const formData = new FormData(form);
+      const fileInput = document.getElementById('epub');
+      const voice = document.getElementById('voice').value;
 
-      textDisplay.textContent = 'Processing EPUB...';
+      const formData = new FormData();
+      formData.append('epub', fileInput.files[0]);
+      formData.append('voice', voice);
 
-      try {
-        const res = await fetch('/upload', {
-          method: 'POST',
-          body: formData
-        });
+      const res = await fetch('/upload', { method: 'POST', body: formData });
+      const { upload_id, chunks } = await res.json();
 
-        const data = await res.json();
+      const container = document.getElementById('chunks');
+      container.innerHTML = '';
 
-        if (!data.audio_files || !data.text_chunks) {
-          textDisplay.textContent = 'Conversion failed: ' + (data.error || 'Unknown error');
-          return;
-        }
+      chunks.forEach((text, idx) => {
+        const div = document.createElement('div');
+        div.textContent = text;
+        div.onclick = () => playChunk(upload_id, idx, div);
+        container.appendChild(div);
+      });
+    };
 
-        audioFiles = data.audio_files;
-        textDisplay.innerHTML = '';
+    async function playChunk(upload_id, idx, el) {
+      // Highlight
+      document.querySelectorAll('.playing').forEach(x => x.classList.remove('playing'));
+      el.classList.add('playing');
 
-        data.text_chunks.forEach((chunk, i) => {
-          const span = document.createElement('span');
-          span.textContent = chunk + ' ';
-          span.dataset.audio = `/audio/${data.audio_files[i]}`;
-          span.dataset.index = i;
-          textDisplay.appendChild(span);
-        });
-      } catch (err) {
-        textDisplay.textContent = 'Error uploading file';
-        console.error(err);
-      }
-    });
-
-    textDisplay.addEventListener('click', (e) => {
-      if (e.target.tagName.toLowerCase() === 'span' && e.target.dataset.audio) {
-        const spans = Array.from(textDisplay.querySelectorAll('span'));
-        spans.forEach(s => s.classList.remove('highlight'));
-
-        e.target.classList.add('highlight');
-
-        if (currentAudio) {
-          currentAudio.pause();
-          currentAudio.currentTime = 0;
-        }
-
-        currentAudio = new Audio(e.target.dataset.audio);
-        currentAudio.play();
-      }
-    });
+      // Fetch audio bytes
+      const res = await fetch('/chunk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ upload_id, index: idx })
+      });
+      const buf = await res.arrayBuffer();
+      new Audio(URL.createObjectURL(new Blob([buf], { type: 'audio/mpeg' }))).play();
+    }
   </script>
 </body>
 </html>
