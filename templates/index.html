@@ -1,42 +1,170 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <title>EPUB to Audio</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EPUB Audio Reader</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"/>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #121212;
+      color: #eee;
+      margin: 0;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    h1 {
+      font-weight: 700;
+      margin-bottom: 1rem;
+    }
+    form {
+      background-color: #1f1f1f;
+      padding: 1.5rem;
+      border-radius: 12px;
+      max-width: 600px;
+      width: 100%;
+      box-shadow: 0 4px 12px rgb(0 0 0 / 0.5);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    input[type="file"], select {
+      padding: 0.8rem 1rem;
+      border-radius: 8px;
+      border: none;
+      font-size: 1rem;
+      background-color: #2a2a2a;
+      color: #eee;
+      cursor: pointer;
+    }
+    button {
+      background-color: #4c8bf5;
+      color: white;
+      font-weight: 600;
+      border: none;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1.1rem;
+      transition: background-color 0.25s ease;
+    }
+    button:hover {
+      background-color: #3a6fe2;
+    }
+    #textDisplay {
+      margin-top: 2rem;
+      max-width: 800px;
+      background-color: #1e1e1e;
+      padding: 1.5rem;
+      border-radius: 12px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      user-select: text;
+      cursor: default;
+    }
+    .highlight {
+      background-color: #4c8bf5;
+      color: white;
+      padding: 0 4px;
+      border-radius: 4px;
+      transition: background-color 0.3s;
+    }
+    span {
+      cursor: pointer;
+    }
+    #status {
+      margin-top: 1rem;
+      font-style: italic;
+      color: #ccc;
+    }
+  </style>
 </head>
 <body>
-    <h1>Upload EPUB File</h1>
-    <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
-        <input type="file" id="epubFile" name="file" accept=".epub" required />
-        <button type="submit">Convert</button>
-    </form>
-    <div id="result"></div>
 
-    <script>
-        const form = document.getElementById("uploadForm");
-        const resultDiv = document.getElementById("result");
+  <h1>EPUB Audio Reader</h1>
 
-        form.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const formData = new FormData(form);
+  <form id="uploadForm">
+    <input type="file" id="epubFile" name="file" accept=".epub" required />
+    <select id="voiceSelect" name="voice">
+      <option value="">Select Voice (default: Jenny)</option>
+    </select>
+    <button type="submit">Convert EPUB to Audio</button>
+  </form>
 
-            try {
-                const response = await fetch("/upload", {
-                    method: "POST",
-                    body: formData
-                });
+  <div id="status"></div>
+  <div id="textDisplay"></div>
 
-                const result = await response.json();
+  <script>
+    const voices = [
+      "en-AU-NatashaNeural", "en-AU-WilliamNeural", "en-CA-ClaraNeural", "en-CA-LiamNeural",
+      "en-GB-LibbyNeural", "en-GB-RyanNeural", "en-GB-SoniaNeural", "en-IN-NeerjaNeural",
+      "en-IN-PriyaNeural", "en-US-AriaNeural", "en-US-GuyNeural", "en-US-JennyNeural",
+      "en-US-MichelleNeural", "en-US-TonyNeural"
+    ];
 
-                if (response.ok) {
-                    resultDiv.textContent = `✅ ${result.message}`;
-                } else {
-                    resultDiv.textContent = `❌ ${result.error}`;
-                }
-            } catch (error) {
-                resultDiv.textContent = "❌ Upload failed.";
-            }
+    const voiceSelect = document.getElementById('voiceSelect');
+    voices.forEach(v => {
+      const option = document.createElement('option');
+      option.value = v;
+      option.textContent = v;
+      voiceSelect.appendChild(option);
+    });
+
+    const form = document.getElementById('uploadForm');
+    const textDisplay = document.getElementById('textDisplay');
+    const statusDiv = document.getElementById('status');
+
+    let currentAudio = null;
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      statusDiv.textContent = 'Processing EPUB...';
+      textDisplay.innerHTML = '';
+      const formData = new FormData(form);
+
+      try {
+        const res = await fetch('/upload', {
+          method: 'POST',
+          body: formData
         });
-    </script>
+
+        const data = await res.json();
+
+        if (!data.audio_files || !data.text_chunks) {
+          statusDiv.textContent = 'Conversion failed: ' + (data.error || 'Unknown error');
+          return;
+        }
+
+        statusDiv.textContent = 'Conversion successful! Click any sentence to play audio.';
+        data.text_chunks.forEach((chunk, i) => {
+          const span = document.createElement('span');
+          span.textContent = chunk + ' ';
+          span.dataset.audio = `/audio/${data.audio_files[i]}`;
+          span.dataset.index = i;
+          textDisplay.appendChild(span);
+        });
+      } catch (err) {
+        statusDiv.textContent = 'Error uploading file.';
+        console.error(err);
+      }
+    });
+
+    textDisplay.addEventListener('click', (e) => {
+      if (e.target.tagName.toLowerCase() === 'span' && e.target.dataset.audio) {
+        [...textDisplay.querySelectorAll('span')].forEach(s => s.classList.remove('highlight'));
+        e.target.classList.add('highlight');
+        if (currentAudio) {
+          currentAudio.pause();
+          currentAudio.currentTime = 0;
+        }
+        currentAudio = new Audio(e.target.dataset.audio);
+        currentAudio.play();
+      }
+    });
+  </script>
 </body>
 </html>
